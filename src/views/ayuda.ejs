@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title || 'Ayuda' %> - SchoolNode</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <div class="container-fluid">
+    <div class="row">
+      <%- include('partials/sidebar') %>
+
+      <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+        <%- include('partials/header') %>
+
+        <h2 class="mb-4">Centro de Ayuda</h2>
+
+        <div class="row">
+          <div class="col-md-6">
+            <div class="card mb-4">
+              <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Administrador</h5>
+              </div>
+              <div class="card-body">
+                <p>Como administrador tienes acceso completo al sistema:</p>
+                <ul>
+                  <li>Gestionar empleados (crear, editar, eliminar)</li>
+                  <li>Crear y gestionar cursos y aulas</li>
+                  <li>Matricular estudiantes</li>
+                  <li>Registrar pagos y ver estado financiero</li>
+                  <li>Acceder a configuración del sistema</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <div class="card mb-4">
+              <div class="card-header bg-success text-white">
+                <h5 class="mb-0">Empleado</h5>
+              </div>
+              <div class="card-body">
+                <p>Como empleado puedes:</p>
+                <ul>
+                  <li>Ver y gestionar estudiantes</li>
+                  <li>Ver cursos y aulas</li>
+                  <li>Crear matrículas</li>
+                  <li>Registrar pagos</li>
+                  <li>Enviar notificaciones</li>
+                </ul>
+                <div class="alert alert-warning">
+                  <strong>Nota:</strong> No tienes acceso a la sección de Empleados ni Configuración.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card mb-4">
+          <div class="card-header bg-info text-white">
+            <h5 class="mb-0">Módulos del Sistema</h5>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-4">
+                <h6>Estudiantes</h6>
+                <p>Gestión completa de estudiantes con búsqueda por cédula y paginación.</p>
+              </div>
+              <div class="col-md-4">
+                <h6>Cursos</h6>
+                <p>Administra los cursos y aulas disponibles con control de capacidad.</p>
+              </div>
+              <div class="col-md-4">
+                <h6>Matrículas</h6>
+                <p>Vincula estudiantes con cursos y aulas. Control de vencimiento.</p>
+              </div>
+              <div class="col-md-4">
+                <h6>Pagos</h6>
+                <p>Registra pagos físicos y en línea. Genera facturas.</p>
+              </div>
+              <div class="col-md-4">
+                <h6>Empleados</h6>
+                <p>Administra los usuarios del sistema con diferentes roles (solo admin).</p>
+              </div>
+              <div class="col-md-4">
+                <h6>Ajustes</h6>
+                <p>Configura la institución, pagos y credenciales (solo admin).</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header bg-warning text-dark">
+            <h5 class="mb-0">¿Necesitas más ayuda?</h5>
+          </div>
+          <div class="card-body">
+            <p>Si tienes problemas con el sistema o necesitas soporte técnico:</p>
+            <div class="d-flex gap-3">
+              <a href="mailto:admin@schoolnode.com" class="btn btn-primary">
+                Contactar Administrador
+              </a>
+              <a href="mailto:soporte@schoolnode.com" class="btn btn-secondary">
+                Soporte Técnico
+              </a>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/usuario.js"></script>
+</body>
+</html>

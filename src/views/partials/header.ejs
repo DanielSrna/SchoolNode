@@ -1,0 +1,68 @@
+<!-- Header parcial reutilizable con botón de usuario -->
+<div class="header-bar">
+  <div class="header-info">
+    <h5 class="mb-0" id="headerNombreInstitucion">SchoolNode</h5>
+    <small class="text-muted" id="headerUbicacion"></small>
+  </div>
+  <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalUsuario">
+    Mi Usuario
+  </button>
+</div>
+
+<!-- Script para cargar configuración dinámica desde la BD -->
+<script src="/js/config-loader.js"></script>
+
+<!-- Variables globales para JavaScript del cliente -->
+<script>
+  window.esAdmin = <%= typeof esAdmin !== 'undefined' && esAdmin ? 'true' : 'false' %>;
+  window.esEmpleado = <%= typeof esEmpleado !== 'undefined' && esEmpleado ? 'true' : 'false' %>;
+  window.esEstudiante = <%= typeof esEstudiante !== 'undefined' && esEstudiante ? 'true' : 'false' %>;
+</script>
+
+<!-- Script de auto-refresh de tokens -->
+<script src="/js/auth-manager.js"></script>
+
+<!-- Modal de Usuario -->
+<div class="modal fade" id="modalUsuario" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Información del Usuario</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label"><strong>Nombre:</strong></label>
+          <p class="mb-0" id="usuarioNombre">-</p>
+        </div>
+        <div class="mb-3">
+          <label class="form-label"><strong>Email:</strong></label>
+          <p class="mb-0" id="usuarioEmail">-</p>
+        </div>
+        <div class="mb-3">
+          <label class="form-label"><strong>Rol:</strong></label>
+          <p class="mb-0"><span class="badge bg-primary" id="usuarioRol">-</span></p>
+        </div>
+        <hr>
+        <h6>Cambiar ID (Cédula)</h6>
+        <div class="mb-3">
+          <input type="text" class="form-control" id="nuevoId" placeholder="Nuevo ID">
+          <small class="text-muted">Requiere confirmación por email</small>
+        </div>
+        <button class="btn btn-warning btn-sm" onclick="cambiarID()">
+          Confirmar con Email
+        </button>
+        
+        <hr class="mt-3">
+        <h6>Cambiar Contraseña</h6>
+        <div class="mb-3">
+          <input type="password" class="form-control" id="nuevaPassword" placeholder="Nueva contraseña" minlength="8">
+          <small class="text-muted">Mínimo 8 caracteres</small>
+        </div>
+        <button class="btn btn-warning btn-sm" onclick="cambiarPassword()">
+          Confirmar con Email
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

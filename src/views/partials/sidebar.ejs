@@ -1,0 +1,66 @@
+<!-- Sidebar parcial reutilizable -->
+<nav class="col-md-3 col-lg-2 d-md-block bg-light sidebar">
+  <div class="position-sticky pt-3">
+    <div class="text-center mb-4">
+      <div class="bg-primary text-white p-3 rounded mb-2" id="sidebarLogo">
+        <h4>SN</h4>
+      </div>
+      <h5 class="mt-2" id="sidebarNombre">SchoolNode</h5>
+    </div>
+    <ul class="nav flex-column">
+      <% if (typeof esAdmin !== 'undefined' && esAdmin === true) { %>
+      <li class="nav-item">
+        <a class="nav-link <%= title === 'Dashboard' ? 'active' : '' %>" href="/dashboard">
+          Dashboard
+        </a>
+      </li>
+      <% } %>
+      <li class="nav-item">
+        <a class="nav-link <%= title === 'Estudiantes' ? 'active' : '' %>" href="/estudiantes">
+          Estudiantes
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link <%= title === 'Cursos' ? 'active' : '' %>" href="/cursos">
+          Cursos
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link <%= title === 'Matrículas' ? 'active' : '' %>" href="/matriculas">
+          Matrículas
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link <%= title === 'Pagos' ? 'active' : '' %>" href="/pagos">
+          Pagos
+        </a>
+      </li>
+      <% if (typeof esAdmin !== 'undefined' && esAdmin === true) { %>
+      <li class="nav-item">
+        <a class="nav-link <%= title === 'Empleados' ? 'active' : '' %>" href="/empleados">
+          Empleados
+        </a>
+      </li>
+      <% } %>
+      <li class="nav-item mt-auto"></li>
+    </ul>
+    <!-- Botones inferiores: Ayuda visible para todos, Ajustes solo admin, Cerrar Sesión para todos -->
+    <div class="sidebar-bottom">
+      <div class="row g-0 mb-1">
+        <div class="col-6 pe-0">
+          <a class="btn btn-light w-100" href="/ayuda">Ayuda</a>
+        </div>
+        <% if (typeof esAdmin !== 'undefined' && esAdmin === true) { %>
+        <div class="col-6 ps-0">
+          <a class="btn btn-light w-100" href="/ajustes">Ajustes</a>
+        </div>
+        <% } else { %>
+        <div class="col-6 ps-0">
+          <a class="btn btn-light w-100 disabled" aria-disabled="true" title="Solo administradores">Ajustes</a>
+        </div>
+        <% } %>
+      </div>
+      <a class="btn btn-danger w-100" href="/api/auth/logout">Cerrar Sesión</a>
+    </div>
+  </div>
+</nav>

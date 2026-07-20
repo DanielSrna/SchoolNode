@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Procesando Pago - SchoolNode</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body class="bg-light">
+  <div class="container">
+    <div class="row justify-content-center align-items-center min-vh-100">
+      <div class="col-md-5">
+        <div class="card shadow">
+          <div class="card-header bg-primary text-white text-center">
+            <h4 class="mb-0">Simulación de Pago</h4>
+          </div>
+          <div class="card-body p-4">
+            <div class="alert alert-info text-center">
+              <small>Esta es una simulación de Stripe.<br>Para usar Stripe real, configure sus claves en Ajustes.</small>
+            </div>
+            <h5 class="text-center mb-3">Motos BSA la 23</h5>
+            <hr>
+            <div class="d-flex justify-content-between mb-2">
+              <span>Matrícula:</span>
+              <strong id="matriculaInfo">Cargando...</strong>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+              <span>Monto a pagar:</span>
+              <strong class="text-success" id="montoInfo">$0</strong>
+            </div>
+            <hr>
+            <div class="mb-3">
+              <label class="form-label">Número de tarjeta (simulado)</label>
+              <input type="text" class="form-control" value="4242 4242 4242 4242" readonly>
+            </div>
+            <div class="row mb-3">
+              <div class="col-6">
+                <label class="form-label">Vencimiento</label>
+                <input type="text" class="form-control" value="12/28" readonly>
+              </div>
+              <div class="col-6">
+                <label class="form-label">CVC</label>
+                <input type="text" class="form-control" value="123" readonly>
+              </div>
+            </div>
+            <div class="d-grid gap-2">
+              <button class="btn btn-success btn-lg" id="btnPagar" onclick="procesarPago()">
+                Confirmar Pago
+              </button>
+              <a href="/pagos" class="btn btn-outline-secondary">Cancelar</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get('session_id');
+    const matriculaId = params.get('matricula');
+    const monto = parseFloat(params.get('monto'));
+
+    document.getElementById('montoInfo').textContent = `$${monto.toLocaleString('es-CO')}`;
+
+    // Cargar info de la matrícula
+    fetch(`/api/matriculas/${matriculaId}`, { credentials: 'same-origin' })
+      .then(r => r.json())
+      .then(mat => {
+        document.getElementById('matriculaInfo').textContent =
+          `${mat.estudiante.nombre} ${mat.estudiante.apellido} - ${mat.curso.nombre}`;
+      })
+      .catch(err => console.error('Error:', err));
+
+    async function procesarPago() {
+      const btn = document.getElementById('btnPagar');
+      btn.disabled = true;
+      btn.innerHTML = 'Procesando...';
+
+      try {
+        const response = await fetch('/api/pagos/confirmar-simulacion', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            matriculaId,
+            monto,
+            sessionId,
+          }),
+        });
+
+        if (response.ok) {
+          window.location.href = '/pagos?exito=1';
+        } else {
+          const err = await response.json();
+          alert('Error: ' + (err.error || 'No se pudo procesar el pago'));
+          btn.disabled = false;
+          btn.innerHTML = 'Confirmar Pago';
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Error de conexión');
+        btn.disabled = false;
+        btn.innerHTML = 'Confirmar Pago';
+      }
+    }
+  </script>
+</body>
+</html>

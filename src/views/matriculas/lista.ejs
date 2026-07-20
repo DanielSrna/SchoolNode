@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title || 'Matrículas' %> - SchoolNode</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <div class="container-fluid">
+    <div class="row">
+      <%- include('../partials/sidebar') %>
+
+      <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+        <%- include('../partials/header') %>
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h2>Gestión de Matrículas</h2>
+          <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevaMatricula">
+            Nueva Matrícula
+          </button>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="row mb-4">
+          <div class="col-md-4">
+            <div class="card text-bg-primary">
+              <div class="card-body text-center">
+                <h6 class="card-title">Total Alumnos</h6>
+                <h2 class="mb-0" id="totalAlumnos">0</h2>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card text-bg-success">
+              <div class="card-body text-center">
+                <h6 class="card-title">Matrículas Activas</h6>
+                <h2 class="mb-0" id="matriculasActivas">0</h2>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card text-bg-danger">
+              <div class="card-body text-center">
+                <h6 class="card-title">Matrículas Vencidas</h6>
+                <h2 class="mb-0" id="matriculasVencidas">0</h2>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabla de Matrículas -->
+        <div class="card">
+          <div class="card-header">
+            <h5 class="mb-0">Matrículas Registradas</h5>
+          </div>
+          <div class="card-body">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>ID</th>
+                  <th>Curso</th>
+                  <th>Fecha Vencimiento</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="tablaMatriculas"></tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Modal Nueva Matrícula -->
+  <div class="modal fade" id="modalNuevaMatricula" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Nueva Matrícula</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="formNuevaMatricula">
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label class="form-label">Estudiante *</label>
+                <select class="form-select" id="matriculaEstudiante" required>
+                  <option value="">Seleccionar estudiante...</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Curso *</label>
+                <select class="form-select" id="matriculaCurso" required>
+                  <option value="">Seleccionar curso...</option>
+                </select>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Aula *</label>
+              <select class="form-select" id="matriculaAula" required>
+                <option value="">Seleccionar aula...</option>
+              </select>
+              <small class="text-muted" id="aulaInfo"></small>
+            </div>
+            <div class="alert alert-info">
+              <strong>Nota:</strong> El estudiante tendrá 7 días para completar el pago.
+            </div>
+            <button type="submit" class="btn btn-primary">Crear Matrícula</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/matriculas.js"></script>
+  <script src="/js/usuario.js"></script>
+</body>
+</html>
