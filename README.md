@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # SchoolNode - Prototipo TRL5
 
 Sistema de gestión escolar para automatización de matrículas y control financiero.
@@ -215,3 +216,6 @@ MIT License
 
 Universidad Nacional Abierta y a Distancia UNAD  
 Ingeniería de Sistemas - 2026
+=======
+# SchoolNode
+>>>>>>> 5d777d2576cf6d6d7895ada99811d050028f160c
