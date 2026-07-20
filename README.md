@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # SchoolNode - Prototipo TRL5
 
 Sistema de gestión escolar para automatización de matrículas y control financiero.
