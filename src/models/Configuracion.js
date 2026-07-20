@@ -32,6 +32,10 @@ const configuracionSchema = new mongoose.Schema(
       type: String,
       default: '#0d6efd',
     },
+    logoEmoji: {
+      type: String,
+      default: '🏫',
+    },
     // Configuración de facturación
     facturacion: {
       prefijoFactura: { type: String, default: 'FAC' },

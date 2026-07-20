@@ -8,12 +8,21 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=development
+      - PORT=3000
       - MONGODB_URI=mongodb://mongo:27017/schoolnode
+      - JWT_SECRET=schoolnode_secret_key_dev
+      - JWT_REFRESH_SECRET=schoolnode_refresh_secret_dev
+      - JWT_ACCESS_EXPIRATION=15m
+      - JWT_REFRESH_EXPIRATION=7d
+      - STRIPE_SECRET_KEY=sk_test_replace_with_real_key
+      - STRIPE_PUBLISHABLE_KEY=pk_test_replace_with_real_key
+      - STRIPE_WEBHOOK_SECRET=whsec_replace_with_real_secret
+      - APP_URL=http://localhost:3000
     depends_on:
-      - mongo
+      mongo:
+        condition: service_healthy
     volumes:
-      - .:/app
-      - /app/node_modules
+      - app_uploads:/app/uploads
     restart: unless-stopped
 
   mongo:
@@ -23,8 +32,32 @@ services:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     restart: unless-stopped
+
+  mongo-seed:
+    image: node:20-alpine
+    container_name: schoolnode-seed
+    working_dir: /app
+    command: ["npm", "run", "seed"]
+    environment:
+      - NODE_ENV=development
+      - MONGODB_URI=mongodb://mongo:27017/schoolnode
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      mongo:
+        condition: service_healthy
+    profiles:
+      - seed
 
 volumes:
   mongo_data:
+    driver: local
+  app_uploads:
     driver: local

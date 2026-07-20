@@ -12,9 +12,11 @@
     const headerUbicacion = document.getElementById('headerUbicacion');
     if (headerUbicacion) headerUbicacion.textContent = config.ubicacion || '';
 
-    // Sidebar
-    const sidebarNombre = document.getElementById('sidebarNombre');
-    if (sidebarNombre) sidebarNombre.textContent = config.nombreInstitucion || 'SchoolNode';
+    // Logo: si hay emoji personalizado, usarlo
+    const logoIcon = document.getElementById('sidebarLogoIcon');
+    if (logoIcon && config.logoEmoji) {
+      logoIcon.textContent = config.logoEmoji;
+    }
 
     // Color primario
     if (config.colorPrimario) {

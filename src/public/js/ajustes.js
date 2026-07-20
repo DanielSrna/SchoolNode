@@ -4,6 +4,14 @@ document.addEventListener('DOMContentLoaded', function() {
   cargarEstadisticas();
   cargarInfoAdmin();
 
+  // Preview del logo al escribir
+  const inputLogo = document.getElementById('cfgLogoEmoji');
+  if (inputLogo) {
+    inputLogo.addEventListener('input', function() {
+      document.getElementById('logoPreview').textContent = this.value || '🏫';
+    });
+  }
+
   document.getElementById('formConfigGeneral').addEventListener('submit', guardarConfigGeneral);
   document.getElementById('formConfigFacturacion').addEventListener('submit', guardarConfigFacturacion);
   document.getElementById('formCredenciales').addEventListener('submit', cambiarCredenciales);
@@ -20,6 +28,8 @@ async function cargarConfiguracion() {
     document.getElementById('cfgTelefono').value = config.telefono || '';
     document.getElementById('cfgEmail').value = config.email || '';
     document.getElementById('cfgColor').value = config.colorPrimario || '#0d6efd';
+    document.getElementById('cfgLogoEmoji').value = config.logoEmoji || '🏫';
+    document.getElementById('logoPreview').textContent = config.logoEmoji || '🏫';
 
     if (config.facturacion) {
       document.getElementById('cfgPrefijo').value = config.facturacion.prefijoFactura || 'FAC';
@@ -70,6 +80,7 @@ async function guardarConfigGeneral(e) {
     telefono: document.getElementById('cfgTelefono').value,
     email: document.getElementById('cfgEmail').value,
     colorPrimario: document.getElementById('cfgColor').value,
+    logoEmoji: document.getElementById('cfgLogoEmoji').value || '🏫',
   };
 
   try {

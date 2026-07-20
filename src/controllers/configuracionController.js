@@ -28,6 +28,7 @@ const actualizarConfiguracion = async (req, res) => {
       telefono,
       email,
       colorPrimario,
+      logoEmoji,
       facturacion,
     } = req.body;
 
@@ -42,6 +43,7 @@ const actualizarConfiguracion = async (req, res) => {
     if (telefono !== undefined) config.telefono = telefono;
     if (email !== undefined) config.email = email;
     if (colorPrimario !== undefined) config.colorPrimario = colorPrimario;
+    if (logoEmoji !== undefined) config.logoEmoji = logoEmoji;
     if (facturacion) {
       config.facturacion = { ...config.facturacion.toObject(), ...facturacion };
     }
