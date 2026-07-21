@@ -245,3 +245,62 @@ main {
     left: 0;
   }
 }
+
+/* Aviso flotante de credenciales */
+.aviso-credenciales {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #1a1a1a;
+  color: #fff;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  z-index: 9998;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  max-width: 280px;
+  line-height: 1.4;
+}
+
+.aviso-credenciales .titulo {
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+  font-size: 0.85rem;
+}
+
+.aviso-credenciales .credencial {
+  margin: 0.15rem 0;
+}
+
+.aviso-credenciales .credencial strong {
+  color: #aaa;
+  font-weight: 500;
+}
+
+.aviso-credenciales .credencial span {
+  color: #fff;
+  font-weight: 600;
+}
+
+.aviso-credenciales .cerrar {
+  position: absolute;
+  top: 4px;
+  right: 8px;
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.aviso-credenciales .cerrar:hover {
+  color: #fff;
+}
+
+@media print {
+  .aviso-credenciales {
+    display: none;
+  }
+}
