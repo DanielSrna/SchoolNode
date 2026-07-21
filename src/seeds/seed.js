@@ -111,24 +111,38 @@ const seed = async () => {
       logger.exito(`Estudiante creado: ${est.cedula}`);
     }
 
-    // Crear matrículas
+    // Crear matrículas con fechas coherentes al estado
     logger.proceso('Creando matrículas...');
+    const ahora = new Date();
+    const dias = (n) => {
+      const d = new Date(ahora);
+      d.setDate(d.getDate() + n);
+      return d;
+    };
+
     const matriculasData = [
-      { estudianteIdx: 0, cursoIdx: 0, aulaIdx: 0, pagos: 350000, estado: 'activa' },
-      { estudianteIdx: 1, cursoIdx: 0, aulaIdx: 0, pagos: 150000, estado: 'activa' },
-      { estudianteIdx: 2, cursoIdx: 0, aulaIdx: 0, pagos: 0, estado: 'moroso' },
-      { estudianteIdx: 3, cursoIdx: 1, aulaIdx: 1, pagos: 450000, estado: 'activa' },
-      { estudianteIdx: 4, cursoIdx: 1, aulaIdx: 1, pagos: 200000, estado: 'activa' },
-      { estudianteIdx: 5, cursoIdx: 2, aulaIdx: 2, pagos: 280000, estado: 'activa' },
-      { estudianteIdx: 6, cursoIdx: 2, aulaIdx: 2, pagos: 100000, estado: 'activa' },
-      { estudianteIdx: 7, cursoIdx: 3, aulaIdx: 3, pagos: 150000, estado: 'activa' },
-      { estudianteIdx: 8, cursoIdx: 3, aulaIdx: 3, pagos: 0, estado: 'moroso' },
-      { estudianteIdx: 9, cursoIdx: 0, aulaIdx: 0, pagos: 350000, estado: 'activa' },
-      { estudianteIdx: 10, cursoIdx: 1, aulaIdx: 1, pagos: 450000, estado: 'activa' },
-      { estudianteIdx: 11, cursoIdx: 2, aulaIdx: 2, pagos: 0, estado: 'vencida' },
-      { estudianteIdx: 12, cursoIdx: 3, aulaIdx: 3, pagos: 150000, estado: 'activa' },
-      { estudianteIdx: 13, cursoIdx: 0, aulaIdx: 0, pagos: 200000, estado: 'activa' },
-      { estudianteIdx: 14, cursoIdx: 1, aulaIdx: 1, pagos: 450000, estado: 'activa' },
+      // Pagadas completas: estado activa, fecha futura
+      { estudianteIdx: 0, cursoIdx: 0, aulaIdx: 0, pagos: 350000, fechaVenc: dias(10) },
+      { estudianteIdx: 3, cursoIdx: 1, aulaIdx: 1, pagos: 450000, fechaVenc: dias(14) },
+      { estudianteIdx: 5, cursoIdx: 2, aulaIdx: 2, pagos: 280000, fechaVenc: dias(7) },
+      { estudianteIdx: 7, cursoIdx: 3, aulaIdx: 3, pagos: 150000, fechaVenc: dias(12) },
+      { estudianteIdx: 9, cursoIdx: 0, aulaIdx: 0, pagos: 350000, fechaVenc: dias(20) },
+      { estudianteIdx: 10, cursoIdx: 1, aulaIdx: 1, pagos: 450000, fechaVenc: dias(8) },
+      { estudianteIdx: 12, cursoIdx: 3, aulaIdx: 3, pagos: 150000, fechaVenc: dias(15) },
+      { estudianteIdx: 14, cursoIdx: 1, aulaIdx: 1, pagos: 450000, fechaVenc: dias(6) },
+
+      // Pago parcial: estado activa (aún no vence)
+      { estudianteIdx: 1, cursoIdx: 0, aulaIdx: 0, pagos: 150000, fechaVenc: dias(5) },
+      { estudianteIdx: 4, cursoIdx: 1, aulaIdx: 1, pagos: 200000, fechaVenc: dias(4) },
+      { estudianteIdx: 6, cursoIdx: 2, aulaIdx: 2, pagos: 100000, fechaVenc: dias(3) },
+      { estudianteIdx: 13, cursoIdx: 0, aulaIdx: 0, pagos: 200000, fechaVenc: dias(2) },
+
+      // Moroso: fecha vencida en el pasado, sin pagar completo
+      { estudianteIdx: 2, cursoIdx: 0, aulaIdx: 0, pagos: 0, fechaVenc: dias(-3) },
+      { estudianteIdx: 8, cursoIdx: 3, aulaIdx: 3, pagos: 0, fechaVenc: dias(-8) },
+
+      // Vencida: acaba de vencer ayer, aún no pagó nada
+      { estudianteIdx: 11, cursoIdx: 2, aulaIdx: 2, pagos: 0, fechaVenc: dias(-1) },
     ];
 
     for (const mat of matriculasData) {
@@ -139,23 +153,27 @@ const seed = async () => {
       // Calcular pago ajustado (nunca mayor al precio del curso)
       const pagoAjustado = Math.min(mat.pagos, curso.precio);
 
-      // Crear matrícula
+      // Calcular estado desde la fecha de vencimiento
+      let estado = 'activa';
+      const saldo = curso.precio - pagoAjustado;
+      if (mat.fechaVenc < ahora && saldo > 0) {
+        // Diferencia en días entre hoy y la fecha de vencimiento
+        const diasAtraso = Math.ceil((ahora - mat.fechaVenc) / (1000 * 60 * 60 * 24));
+        estado = diasAtraso > 6 ? 'moroso' : 'vencida';
+      }
+
+      // Crear matrícula con fecha de vencimiento explícita
       const m = await new Matricula({
         estudiante: estudiante._id,
         curso: curso._id,
         aula: aula._id,
-        estado: mat.estado,
+        estado: estado,
+        fechaVencimiento: mat.fechaVenc,
       }).save();
 
       // Agregar pago usando el método del modelo (que calcula correctamente)
       if (pagoAjustado > 0) {
         await m.agregarPago(pagoAjustado, 'fisico');
-      }
-
-      // Si el estado es moroso, no debe tener saldo pendiente a 0
-      if (mat.estado === 'moroso' && m.saldoPendiente === 0) {
-        m.estado = 'activa';
-        await m.save();
       }
 
       logger.exito(
