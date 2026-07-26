@@ -1,8 +1,11 @@
 <!-- Header parcial reutilizable con botón de usuario -->
 <div class="header-bar">
-  <div class="header-info">
-    <h5 class="mb-0" id="headerNombreInstitucion">SchoolNode</h5>
-    <small class="text-muted" id="headerUbicacion"></small>
+  <div class="d-flex align-items-center gap-2 header-info">
+    <button type="button" class="btn-menu" id="btnMenu" aria-label="Abrir menú">☰</button>
+    <div>
+      <h5 class="mb-0" id="headerNombreInstitucion">SchoolNode</h5>
+      <small class="text-muted" id="headerUbicacion"></small>
+    </div>
   </div>
   <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalUsuario">
     Mi Usuario

@@ -12,39 +12,41 @@
     <div class="row">
       <%- include('../partials/sidebar') %>
 
-      <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+      <main>
         <%- include('../partials/header') %>
 
         <h2 class="mb-4">Gestión de Alumnos y Matrículas</h2>
 
         <div class="card">
           <div class="card-body">
-            <div class="d-flex justify-content-between mb-3">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
               <h5 class="mb-0">Listado de Estudiantes</h5>
               <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalEstudiante">
                 Nuevo Estudiante
               </button>
             </div>
-            
+
             <div class="row mb-3">
-              <div class="col-md-4">
+              <div class="col-12 col-md-6 col-lg-4">
                 <input type="text" id="buscarCedula" class="form-control" placeholder="Buscar por cédula...">
               </div>
             </div>
-            
-            <table class="table table-hover">
-              <thead>
-                <tr>
-                  <th>Cédula</th>
-                  <th>Nombre</th>
-                  <th>Email</th>
-                  <th>Teléfono</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody id="tablaEstudiantes"></tbody>
-            </table>
-            
+
+            <div class="table-responsive">
+              <table class="table table-hover">
+                <thead>
+                  <tr>
+                    <th>Cédula</th>
+                    <th>Nombre</th>
+                    <th>Email</th>
+                    <th>Teléfono</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="tablaEstudiantes"></tbody>
+              </table>
+            </div>
+
             <nav id="paginacion"></nav>
           </div>
         </div>

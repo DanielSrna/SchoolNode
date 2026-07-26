@@ -1,5 +1,6 @@
 <!-- Sidebar parcial reutilizable -->
-<nav class="col-md-3 col-lg-2 d-md-block bg-light sidebar">
+<nav class="bg-light sidebar" id="sidebar">
+  <button type="button" class="sidebar-cerrar" id="sidebarCerrar" aria-label="Cerrar menú">×</button>
   <div class="position-sticky pt-3">
     <div class="text-center mb-4">
       <div class="bg-primary text-white p-3 rounded mb-2 d-flex align-items-center justify-content-center" id="sidebarLogo" style="width: 80px; height: 80px; margin: 0 auto;">
@@ -63,3 +64,50 @@
     </div>
   </div>
 </nav>
+
+<!-- Overlay para cerrar el menú en móvil/tablet -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<script>
+  // Toggle del sidebar off-canvas en móvil/tablet
+  (function () {
+    var sidebar = document.getElementById('sidebar');
+    var overlay = document.getElementById('sidebarOverlay');
+    var btnCerrar = document.getElementById('sidebarCerrar');
+
+    function abrirSidebar() {
+      sidebar.classList.add('show');
+      overlay.classList.add('show');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function cerrarSidebar() {
+      sidebar.classList.remove('show');
+      overlay.classList.remove('show');
+      document.body.style.overflow = '';
+    }
+
+    overlay.addEventListener('click', cerrarSidebar);
+    btnCerrar.addEventListener('click', cerrarSidebar);
+
+    // El botón hamburguesa está en el header (se renderiza después del sidebar)
+    document.addEventListener('DOMContentLoaded', function () {
+      var btnMenu = document.getElementById('btnMenu');
+      if (btnMenu) {
+        btnMenu.addEventListener('click', abrirSidebar);
+      }
+    });
+
+    // Cerrar el menú al pulsar un enlace en móvil/tablet
+    sidebar.querySelectorAll('a[href]').forEach(function (enlace) {
+      enlace.addEventListener('click', function () {
+        if (window.innerWidth < 992) cerrarSidebar();
+      });
+    });
+
+    // Cerrar el menú si se redimensiona a desktop
+    window.addEventListener('resize', function () {
+      if (window.innerWidth >= 992) cerrarSidebar();
+    });
+  })();
+</script>

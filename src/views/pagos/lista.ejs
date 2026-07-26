@@ -12,14 +12,14 @@
     <div class="row">
       <%- include('../partials/sidebar') %>
 
-      <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+      <main>
         <%- include('../partials/header') %>
 
         <h2 class="mb-4">Gestión de Pagos</h2>
 
         <!-- Stats Cards -->
-        <div class="row mb-4">
-          <div class="col-md-6">
+        <div class="row mb-4 g-2 g-md-3">
+          <div class="col-6">
             <div class="card text-bg-success">
               <div class="card-body text-center">
                 <h6 class="card-title">Total Ganado</h6>
@@ -27,7 +27,7 @@
               </div>
             </div>
           </div>
-          <div class="col-md-6">
+          <div class="col-6">
             <div class="card text-bg-danger">
               <div class="card-body text-center">
                 <h6 class="card-title">Total en Deuda</h6>
@@ -43,20 +43,22 @@
             <h5 class="mb-0">Estado de Pagos por Matrícula</h5>
           </div>
           <div class="card-body">
-                <table class="table table-hover">
-                  <thead>
-                    <tr>
-                      <th>ID Alumno</th>
-                      <th>ID Curso</th>
-                      <th>Pagos Realizados</th>
-                      <th>Costo Total</th>
-                      <th>Ya Pagado</th>
-                      <th>Faltante</th>
-                      <th>Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody id="tablaPagos"></tbody>
-                </table>
+            <div class="table-responsive">
+              <table class="table table-hover">
+                <thead>
+                  <tr>
+                    <th>ID Alumno</th>
+                    <th>ID Curso</th>
+                    <th>Pagos Realizados</th>
+                    <th>Costo Total</th>
+                    <th>Ya Pagado</th>
+                    <th>Faltante</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="tablaPagos"></tbody>
+              </table>
+            </div>
           </div>
         </div>
       </main>

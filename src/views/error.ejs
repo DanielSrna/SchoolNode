@@ -10,15 +10,15 @@
 <body>
   <div class="container mt-5">
     <div class="row justify-content-center">
-      <div class="col-md-6">
+      <div class="col-11 col-sm-10 col-md-8 col-lg-6">
         <div class="card shadow text-center">
-          <div class="card-body p-5">
+          <div class="card-body p-4 p-md-5">
             <h1 class="display-1 text-danger">403</h1>
             <h3 class="mb-3">Acceso Denegado</h3>
             <p class="text-muted"><%= mensaje || 'No tiene permisos para acceder a esta sección.' %></p>
             <hr>
             <p class="mb-4">Si cree que esto es un error, contacte al administrador del sistema.</p>
-            <div class="d-flex gap-2 justify-content-center">
+            <div class="d-flex gap-2 justify-content-center flex-wrap">
               <a href="/estudiantes" class="btn btn-primary">Ir a Estudiantes</a>
               <a href="/api/auth/logout" class="btn btn-outline-secondary">Cerrar Sesión</a>
             </div>

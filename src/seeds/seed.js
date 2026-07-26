@@ -34,6 +34,24 @@ const seed = async () => {
     await admin.save();
     logger.exito('Admin creado: admin@schoolnode.com / Admin123!');
 
+    const admin1 = new User({
+      email: 'admin1@schoolnode.com',
+      password: 'Admin123!',
+      nombre: 'Administrador 1',
+      rol: 'admin',
+    });
+    await admin1.save();
+    logger.exito('Admin1 creado: admin1@schoolnode.com / Admin123!');
+
+    const admin2 = new User({
+      email: 'admin2@schoolnode.com',
+      password: 'Admin123!',
+      nombre: 'Administrador 2',
+      rol: 'admin',
+    });
+    await admin2.save();
+    logger.exito('Admin2 creado: admin2@schoolnode.com / Admin123!');
+
     // Crear empleados
     logger.proceso('Creando empleados...');
     const empleados = [
@@ -187,7 +205,9 @@ const seed = async () => {
 
     logger.exito('=== SEED COMPLETADO EXITOSAMENTE ===');
     logger.proceso('Credenciales de prueba:');
-    logger.proceso('  Admin: admin@schoolnode.com / Admin123!');
+    logger.proceso('  Admin:  admin@schoolnode.com  / Admin123!');
+    logger.proceso('  Admin1: admin1@schoolnode.com / Admin123!');
+    logger.proceso('  Admin2: admin2@schoolnode.com / Admin123!');
     logger.proceso('  Empleado: empleado1@schoolnode.com / Empleado123!');
     
     process.exit(0);
