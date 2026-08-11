@@ -5,6 +5,8 @@ const path = require('path');
 const conectarDB = require('./config/db');
 const logger = require('./utils/logger');
 const { attachUser } = require('./middleware/authMiddleware');
+const authService = require('./services/authService');
+const { limpiarCookiesAuth } = require('./utils/cookies');
 
 // Importar rutas
 const authRoutes = require('./routes/authRoutes');
@@ -18,6 +20,10 @@ const facturaRoutes = require('./routes/facturaRoutes');
 const configuracionRoutes = require('./routes/configuracionRoutes');
 
 const app = express();
+
+// El webhook de Stripe necesita el body CRUDO para verificar la firma,
+// por eso se registra ANTES de express.json()
+app.use('/api/pagos/webhook/stripe', express.raw({ type: 'application/json' }));
 
 // Middleware
 app.use(express.json());
@@ -33,9 +39,6 @@ app.set('views', path.join(__dirname, 'views'));
 
 // Middleware para adjuntar usuario a res.locals (disponible en todas las vistas)
 app.use(attachUser);
-
-// Conectar a MongoDB
-conectarDB();
 
 // Rutas API
 app.use('/api/auth', authRoutes);
@@ -87,18 +90,12 @@ const requireAuth = (req, res, next) => {
 // GET /api/auth/logout - Logout directo que limpia cookies y redirige
 app.get('/api/auth/logout', async (req, res) => {
   try {
-    if (req.usuario) {
-      req.usuario.refreshToken = null;
-      await req.usuario.save();
-      logger.exito(`Logout: ${req.usuario.email}`);
-    }
-    res.clearCookie('accessToken', { path: '/' });
-    res.clearCookie('refreshToken', { path: '/' });
-    res.redirect('/login');
+    await authService.cerrarSesion(req.usuario);
   } catch (error) {
     logger.error(`Error en logout: ${error.message}`);
-    res.redirect('/login');
   }
+  limpiarCookiesAuth(res);
+  res.redirect('/login');
 });
 
 // Middleware para verificar que el usuario sea admin en las vistas protegidas
@@ -140,6 +137,11 @@ app.get('/pagos/simular-pago', requireAuth, (req, res) => {
   res.render('pagos/simular-pago', { title: 'Procesar Pago' });
 });
 
+// Página de retorno de Stripe después de un pago real (success_url)
+app.get('/pagos/exito', requireAuth, (req, res) => {
+  res.render('pagos/exito', { title: 'Pago Exitoso' });
+});
+
 app.get('/empleados', requireAdmin, (req, res) => {
   res.render('empleados/lista', { title: 'Empleados' });
 });
@@ -163,16 +165,22 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Error interno del servidor' });
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  logger.exito(`Servidor corriendo en puerto ${PORT}`);
-  logger.proceso(`Entorno: ${process.env.NODE_ENV || 'development'}`);
-  logger.exito('=== CREDENCIALES DE PRUEBA ===');
-  logger.exito('Admin: admin@schoolnode.com / Admin123!');
-  logger.exito('Empleado: empleado1@schoolnode.com / Empleado123!');
-  logger.exito('Empleado: empleado2@schoolnode.com / Empleado123!');
-  logger.exito('Empleado: empleado3@schoolnode.com / Empleado123!');
-  logger.exito('==============================');
-});
+// Solo conectar a la DB y levantar el servidor cuando se ejecuta directamente
+// (node src/app.js). Las pruebas importan la app sin que escuche ni conecte sola.
+if (require.main === module) {
+  conectarDB();
+
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
+    logger.exito(`Servidor corriendo en puerto ${PORT}`);
+    logger.proceso(`Entorno: ${process.env.NODE_ENV || 'development'}`);
+    logger.exito('=== CREDENCIALES DE PRUEBA ===');
+    logger.exito('Admin: admin@schoolnode.com / Admin123!');
+    logger.exito('Empleado: empleado1@schoolnode.com / Empleado123!');
+    logger.exito('Empleado: empleado2@schoolnode.com / Empleado123!');
+    logger.exito('Empleado: empleado3@schoolnode.com / Empleado123!');
+    logger.exito('==============================');
+  });
+}
 
 module.exports = app;

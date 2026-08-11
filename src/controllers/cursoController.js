@@ -1,91 +1,68 @@
-const { validationResult } = require('express-validator');
 const Curso = require('../models/Curso');
+const { responderError } = require('../utils/ErrorAPI');
 const logger = require('../utils/logger');
+
+// Controlador de cursos: SOLO orquesta.
+// Todas las operaciones de datos viven en el modelo Curso.
 
 // GET /api/cursos
 const listarCursos = async (req, res) => {
   try {
     logger.proceso('Listando cursos');
-    const cursos = await Curso.find({ activo: true });
+    const cursos = await Curso.listarActivos();
     res.json(cursos);
   } catch (error) {
     logger.error(`Error listando cursos: ${error.message}`);
-    res.status(500).json({ error: 'Error en el servidor' });
+    responderError(res, error);
   }
 };
 
 // GET /api/cursos/:id
 const obtenerCurso = async (req, res) => {
   try {
-    const curso = await Curso.findById(req.params.id);
-    if (!curso || !curso.activo) {
-      logger.error(`Curso no encontrado: ${req.params.id}`);
-      return res.status(404).json({ error: 'Curso no encontrado' });
-    }
+    const curso = await Curso.obtenerActivoPorId(req.params.id);
     res.json(curso);
   } catch (error) {
     logger.error(`Error obteniendo curso: ${error.message}`);
-    res.status(500).json({ error: 'Error en el servidor' });
+    responderError(res, error);
   }
 };
 
 // POST /api/cursos
 const crearCurso = async (req, res) => {
   try {
-    const errores = validationResult(req);
-    if (!errores.isEmpty()) {
-      logger.error(`Validación fallida: ${JSON.stringify(errores.array())}`);
-      return res.status(400).json({ errores: errores.array() });
-    }
-
-    const curso = new Curso(req.body);
-    await curso.save();
-
+    const curso = await Curso.crearNuevo(req.body);
     logger.exito(`Curso creado: ${curso.nombre}`);
     res.status(201).json(curso);
   } catch (error) {
     logger.error(`Error creando curso: ${error.message}`);
-    res.status(500).json({ error: 'Error en el servidor' });
+    responderError(res, error);
   }
 };
 
 // PUT /api/cursos/:id
 const actualizarCurso = async (req, res) => {
   try {
-    const curso = await Curso.findById(req.params.id);
-    if (!curso || !curso.activo) {
-      logger.error(`Curso no encontrado: ${req.params.id}`);
-      return res.status(404).json({ error: 'Curso no encontrado' });
-    }
-
-    Object.assign(curso, req.body);
-    await curso.save();
-
+    const curso = await Curso.obtenerActivoPorId(req.params.id);
+    await curso.actualizarDatos(req.body);
     logger.exito(`Curso actualizado: ${curso.nombre}`);
     res.json(curso);
   } catch (error) {
     logger.error(`Error actualizando curso: ${error.message}`);
-    res.status(500).json({ error: 'Error en el servidor' });
+    responderError(res, error);
   }
 };
 
 // DELETE /api/cursos/:id
 const eliminarCurso = async (req, res) => {
   try {
-    const curso = await Curso.findById(req.params.id);
-    if (!curso) {
-      logger.error(`Curso no encontrado: ${req.params.id}`);
-      return res.status(404).json({ error: 'Curso no encontrado' });
-    }
-
-    curso.activo = false;
-    await curso.save();
-
+    const curso = await Curso.obtenerActivoPorId(req.params.id);
+    await curso.desactivar();
     logger.exito(`Curso eliminado: ${curso.nombre}`);
     res.json({ mensaje: 'Curso eliminado exitosamente' });
   } catch (error) {
     logger.error(`Error eliminando curso: ${error.message}`);
-    res.status(500).json({ error: 'Error en el servidor' });
+    responderError(res, error);
   }
 };
 

@@ -47,23 +47,26 @@
           <p class="mb-0"><span class="badge bg-primary" id="usuarioRol">-</span></p>
         </div>
         <hr>
-        <h6>Cambiar ID (Cédula)</h6>
+        <h6>Cambiar Correo de Acceso</h6>
         <div class="mb-3">
-          <input type="text" class="form-control" id="nuevoId" placeholder="Nuevo ID">
-          <small class="text-muted">Requiere confirmación por email</small>
+          <input type="email" class="form-control" id="nuevoEmail" placeholder="nuevo@correo.com">
+          <small class="text-muted">Se enviará un código de verificación al nuevo correo</small>
         </div>
-        <button class="btn btn-warning btn-sm" onclick="cambiarID()">
-          Confirmar con Email
+        <button class="btn btn-warning btn-sm" onclick="cambiarEmail()">
+          Enviar Código
         </button>
-        
+
         <hr class="mt-3">
         <h6>Cambiar Contraseña</h6>
+        <div class="mb-2">
+          <input type="password" class="form-control" id="passwordActual" placeholder="Contraseña actual">
+        </div>
         <div class="mb-3">
           <input type="password" class="form-control" id="nuevaPassword" placeholder="Nueva contraseña" minlength="8">
-          <small class="text-muted">Mínimo 8 caracteres</small>
+          <small class="text-muted">Mínimo 8 caracteres. Recibirás un código en tu correo actual</small>
         </div>
         <button class="btn btn-warning btn-sm" onclick="cambiarPassword()">
-          Confirmar con Email
+          Enviar Código
         </button>
       </div>
     </div>

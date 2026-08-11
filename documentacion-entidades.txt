@@ -1,0 +1,528 @@
+================================================================================
+                         SCHOOLNODE - DOCUMENTACIÓN TÉCNICA
+          Sistema de Gestión para Escuela de Conducción "Motos BSA la 23"
+                 UNAD - Ingeniería de Sistemas - Proyecto de Grado
+================================================================================
+
+Este documento explica, de forma sencilla pero detallada, cómo está construido
+el backend de SchoolNode: las entidades de la base de datos, sus restricciones,
+sus relaciones, las funciones disponibles de cada una, y los mecanismos de
+seguridad (bcrypt, JWT, sesiones).
+
+
+================================================================================
+1. ARQUITECTURA POR CAPAS
+================================================================================
+
+El proyecto sigue el patrón MVC con una regla estricta de separación:
+
+  RUTAS (src/routes/)
+    → Definen los endpoints y las validaciones de entrada (express-validator).
+    → No contienen lógica de negocio.
+
+  MIDDLEWARE (src/middleware/)
+    → authMiddleware: verifica el JWT y renueva la sesión automáticamente.
+    → roleMiddleware: control de acceso por roles (RBAC).
+    → validarCampos: recoge los errores de express-validator en un solo lugar.
+
+  CONTROLADORES (src/controllers/)
+    → SOLO ORQUESTAN: reciben la petición, llaman al modelo o servicio
+      correspondiente y devuelven la respuesta HTTP.
+    → No tienen consultas a la base de datos ni reglas de negocio.
+
+  MODELOS (src/models/)
+    → Cada entidad tiene su esquema Mongoose CON TODAS sus funciones CRUD
+      (métodos estáticos) y sus acciones propias (métodos de instancia).
+
+  SERVICIOS (src/services/)
+    → Lógica que cruza varias entidades o servicios externos:
+      authService (sesiones JWT), pagoService (Stripe/simulación/físicos),
+      facturaService (generación de PDF).
+
+  UTILS (src/utils/)
+    → logger (Winston), cookies (manejo de cookies de sesión),
+      ErrorAPI (errores con código HTTP: responderError, esErrorDuplicado).
+
+Flujo de una petición típica:
+
+  Petición → Ruta (valida formato) → Middleware (autenticación/rol)
+    → Controlador (orquesta) → Modelo/Servicio (lógica + DB)
+    → Controlador → Respuesta JSON
+
+Los errores de negocio se lanzan como ErrorAPI(mensaje, statusCode) desde
+modelos y servicios, y el controlador los traduce con responderError().
+Ejemplo: una cédula duplicada llega como 400 "Cédula ya registrada",
+un recurso inexistente como 404, y un fallo inesperado como 500 genérico.
+
+
+================================================================================
+2. ENTIDADES, RESTRICCIONES, RELACIONES Y FUNCIONES
+================================================================================
+
+--------------------------------------------------------------------------------
+2.1 USER (usuarios del sistema: admins y empleados)
+--------------------------------------------------------------------------------
+Archivo: src/models/User.js
+Colección: users
+
+CAMPOS Y RESTRICCIONES:
+  • email        String, obligatorio, ÚNICO, minúsculas, sin espacios,
+                 debe cumplir formato de email (expresión regular).
+  • password     String, obligatorio, mínimo 8 caracteres.
+                 NUNCA se guarda en texto plano: ver sección 3 (bcrypt).
+  • nombre       String, obligatorio.
+  • rol          String, solo puede ser: 'admin', 'empleado' o 'estudiante'.
+                 Por defecto 'empleado'.
+  • refreshToken String, por defecto null. Guarda el HASH bcrypt del refresh
+                 token JWT actual. Es lo que mantiene activa la sesión (ver 3.3).
+  • activo       Boolean, por defecto true. Permite borrado lógico.
+  • timestamps   createdAt / updatedAt automáticos.
+
+RELACIONES: ninguna directa (es una entidad independiente).
+
+FUNCIONES DE INSTANCIA (sobre un usuario concreto):
+  • compararPassword(textoPlano) → true/false usando bcrypt.compare.
+  • guardarRefreshToken(hash)    → guarda el hash del refresh token (login).
+  • limpiarRefreshToken()        → lo borra: CIERRA la sesión (logout).
+  • actualizarDatos({nombre, email, rol}) → edita validando email único.
+  • cambiarCredenciales({nuevoEmail, nuevaPassword}) → cambio de credenciales
+    del admin (la contraseña se re-hashea sola en el pre-save).
+  • desactivar() → borrado lógico (activo = false).
+  • toJSON()     → devuelve el usuario SIN password NI refreshToken.
+
+FUNCIONES ESTÁTICAS (CRUD de la entidad):
+  • buscarPorEmail(email)        → para el login (incluye campos sensibles).
+  • buscarPorIdSeguro(id)        → sin password ni refreshToken.
+  • listarEmpleados()            → todos los usuarios activos.
+  • obtenerEmpleadoPorId(id)     → uno activo o error 404.
+  • obtenerDocumentoActivo(id)   → documento completo para editar, o 404.
+  • existeEmail(email, excluirId)→ verifica unicidad.
+  • crearEmpleado(datos)         → crea validando email único (400 si repite).
+
+--------------------------------------------------------------------------------
+2.2 ESTUDIANTE
+--------------------------------------------------------------------------------
+Archivo: src/models/Estudiante.js
+Colección: estudiantes
+
+CAMPOS Y RESTRICCIONES:
+  • nombre          String, obligatorio.
+  • apellido        String, obligatorio.
+  • cedula          String, obligatorio, ÚNICO, solo números (match /^\d+$/).
+  • email           String, opcional; si viene debe ser email válido.
+  • telefono        String, opcional.
+  • fechaNacimiento Date, opcional.
+  • direccion       String, opcional.
+  • timestamps      createdAt / updatedAt automáticos.
+
+RELACIONES: es referenciado por Matricula (una matrícula → un estudiante).
+
+FUNCIONES DE INSTANCIA:
+  • actualizarDatos(datos) → edita validando que la nueva cédula no exista.
+  • eliminar()             → borrado FÍSICO, pero SOLO si el estudiante no
+    tiene matrículas activas, vencidas o en mora. Si las tiene, lanza
+    error 400 (protege la integridad de los datos financieros).
+
+FUNCIONES ESTÁTICAS:
+  • listar({page, limit, cedula}) → paginación + búsqueda por cédula.
+    Devuelve { estudiantes, total, pages, currentPage }.
+  • obtenerPorId(id)              → uno o error 404.
+  • existeCedula(cedula, excluirId) → verifica unicidad.
+  • crearNuevo(datos)             → crea validando cédula única (400 si repite).
+
+--------------------------------------------------------------------------------
+2.3 CURSO
+--------------------------------------------------------------------------------
+Archivo: src/models/Curso.js
+Colección: cursos
+
+CAMPOS Y RESTRICCIONES:
+  • nombre      String, obligatorio.
+  • descripcion String, opcional.
+  • precio      Number, obligatorio, no puede ser negativo (min 0).
+  • duracion    String, obligatorio (ej: "4 semanas").
+  • activo      Boolean, por defecto true (borrado lógico).
+  • timestamps  automáticos.
+
+RELACIONES: es referenciado por Matricula. Su precio determina el
+saldoPendiente inicial de cada matrícula.
+
+FUNCIONES DE INSTANCIA:
+  • actualizarDatos(datos) → edición simple.
+  • desactivar()           → borrado lógico.
+
+FUNCIONES ESTÁTICAS:
+  • listarActivos()         → solo cursos activos.
+  • obtenerActivoPorId(id)  → uno activo o error 404.
+  • crearNuevo(datos)       → creación.
+
+--------------------------------------------------------------------------------
+2.4 AULA
+--------------------------------------------------------------------------------
+Archivo: src/models/Aula.js
+Colección: aulas
+
+CAMPOS Y RESTRICCIONES:
+  • numero     String, obligatorio, ÚNICO (ej: "A01").
+  • capacidad  Number, obligatorio, mínimo 1.
+  • ubicacion  String, opcional.
+  • activo     Boolean, por defecto true (borrado lógico).
+  • timestamps automáticos.
+
+RELACIONES: es referenciado por Matricula.
+
+FUNCIONES DE INSTANCIA:
+  • obtenerPoblacionActual() → cuenta las matrículas ACTIVAS del aula en
+    tiempo real (no se guarda un contador, se calcula siempre).
+  • tieneCupoDisponible()    → poblacionActual < capacidad.
+  • actualizarDatos(datos)   → edita; 400 si el número queda duplicado.
+  • desactivar()             → borrado lógico.
+
+FUNCIONES ESTÁTICAS:
+  • listarActivasConPoblacion()   → aulas activas + poblacionActual calculada.
+  • obtenerActivaConPoblacion(id) → una aula + su población, o 404.
+  • obtenerActivaPorId(id)        → documento activo o 404.
+  • crearNueva(datos)             → crea; 400 "Ya existe un aula con ese número".
+
+--------------------------------------------------------------------------------
+2.5 MATRÍCULA (entidad central del negocio)
+--------------------------------------------------------------------------------
+Archivo: src/models/Matricula.js
+Colección: matriculas
+
+CAMPOS Y RESTRICCIONES:
+  • estudiante       ObjectId → ref 'Estudiante', obligatorio.
+  • curso            ObjectId → ref 'Curso', obligatorio.
+  • aula             ObjectId → ref 'Aula', obligatorio.
+  • fechaInicio      Date, por defecto hoy.
+  • fechaVencimiento Date, por defecto hoy + 7 días (plazo para pagar).
+  • estado           String, solo: 'activa', 'vencida', 'moroso', 'cancelada'.
+                     Por defecto 'activa'. Es la base de la semaforización.
+  • pagos[]          Subdocumentos embebidos:
+                       - monto: Number obligatorio, no negativo.
+                       - fecha: Date, por defecto ahora.
+                       - metodo: solo 'fisico' o 'stripe'.
+                       - stripePaymentId: String opcional.
+  • totalPagado      Number, por defecto 0.
+  • saldoPendiente   Number, por defecto 0.
+  • timestamps       automáticos.
+
+RESTRICCIÓN ESPECIAL:
+  • Índice compuesto ÚNICO (estudiante + curso): impide que un estudiante
+    se matricule dos veces en el mismo curso a nivel de base de datos.
+
+HOOK PRE-SAVE:
+  • Al crear: saldoPendiente = precio del curso.
+  • Al actualizar: saldoPendiente = max(0, precio - totalPagado).
+    Siempre se recalcula desde el precio, nunca con restas sucesivas
+    (evita errores de redondeo/acumulación).
+
+FUNCIONES DE INSTANCIA:
+  • agregarPago(monto, metodo, stripePaymentId) → agrega al array de pagos,
+    recalcula totalPagado y saldoPendiente, y si el saldo llega a 0
+    deja el estado en 'activa'.
+  • recalcularTotales() → rehace las cuentas desde cero (lo usa el script
+    npm run arreglar-saldos para corregir inconsistencias).
+  • verificarVencimiento() → si hoy > fechaVencimiento y hay saldo,
+    pasa el estado a 'moroso'. Se aplica al listar matrículas.
+  • cambiarEstado(estado)  → solo acepta valores del enum (400 si no).
+  • cancelar()             → estado 'cancelada' (borrado lógico).
+
+FUNCIONES ESTÁTICAS:
+  • listarConDetalles() → todas, con estudiante/curso/aula populados,
+    aplicando verificarVencimiento() a cada una (semaforización en vivo).
+  • obtenerDetallePorId(id) → una con todas las relaciones, o 404.
+  • crearNueva({estudianteId, cursoId, aulaId}) → aplica las REGLAS DE NEGOCIO:
+      1) el estudiante debe existir (404),
+      2) el curso debe existir y estar activo (404),
+      3) el estudiante no debe tener otra matrícula activa (400),
+      4) el aula debe existir, estar activa y tener cupo (400 "llena").
+  • migrarAula(matriculaId, nuevoAulaId) → mueve al estudiante de aula
+    validando que el aula destino exista y tenga cupo (400/404 si no).
+
+--------------------------------------------------------------------------------
+2.6 TOKEN DE ACCIÓN (verificación por correo)
+--------------------------------------------------------------------------------
+Archivo: src/models/TokenAccion.js
+Colección: tokenaccions
+
+Propósito: confirmar acciones sensibles de la cuenta (cambio de correo de
+acceso y cambio de contraseña) mediante un código de 6 dígitos enviado
+al correo del usuario.
+
+CAMPOS Y RESTRICCIONES:
+  • usuario     ObjectId → ref 'User', obligatorio.
+  • tipo        String, solo 'email' o 'password'.
+  • codigoHash  String, obligatorio: el código de 6 dígitos hasheado con
+                bcrypt (NUNCA se guarda en texto plano).
+  • valor       String, obligatorio: el cambio pendiente.
+                - tipo 'email': el nuevo correo en texto plano.
+                - tipo 'password': el hash bcrypt de la nueva contraseña.
+  • expira      Date: 10 minutos desde su creación.
+  • intentos    Number, por defecto 0 (máximo 5 intentos fallidos).
+  • timestamps  automáticos.
+
+REGLAS:
+  • Solo puede haber UNA solicitud activa por usuario y tipo: al pedir
+    otra, la anterior se invalida.
+  • El código es de un solo uso: al confirmarse, el documento se elimina.
+  • Al expirar o superar los intentos, el documento se elimina y hay que
+    solicitar uno nuevo.
+
+FUNCIONES:
+  • generar(usuarioId, tipo, valor) → estática. Crea el token y devuelve
+    el código en claro (solo para enviarlo por correo).
+  • buscarActivo(usuarioId, tipo)   → estática. La solicitud pendiente o 400.
+  • verificarCodigo(codigo)         → instancia. Compara con bcrypt; lanza
+    400 si es incorrecto (con intentos restantes), expiró o hubo 5 fallos.
+
+--------------------------------------------------------------------------------
+2.7 CONFIGURACIÓN (datos institucionales)
+--------------------------------------------------------------------------------
+Archivo: src/models/Configuracion.js
+Colección: configuracions
+
+CAMPOS Y RESTRICCIONES:
+  • clave             String, obligatorio, ÚNICO, por defecto 'general'
+                      (patrón singleton: solo existe UN documento general).
+  • nombreInstitucion String, por defecto 'Motos BSA la 23'.
+  • ubicacion         String, por defecto 'Tuluá, Valle del Cauca'.
+  • nit               String, por defecto '900.123.456-7'.
+  • telefono, email   Strings opcionales.
+  • colorPrimario     String, por defecto '#0d6efd' (personaliza la interfaz).
+  • logoEmoji         String, por defecto '🏫'.
+  • facturacion       Subdocumento:
+                        - prefijoFactura (defecto 'FAC')
+                        - regimen (defecto 'Simplificado')
+                        - resolucionDIAN (opcional)
+                        - pieFactura (defecto 'Gracias por su pago')
+  • timestamps        automáticos.
+
+RELACIONES: ninguna; la leen las facturas PDF y la interfaz.
+
+FUNCIONES ESTÁTICAS:
+  • obtenerGeneral()        → devuelve la configuración; si no existe,
+                              la crea con los valores por defecto.
+  • actualizarGeneral(dato) → actualiza SOLO los campos recibidos
+                              (merge parcial, incluido el subdocumento
+                              facturacion).
+
+--------------------------------------------------------------------------------
+RESUMEN DEL DIAGRAMA DE RELACIONES
+--------------------------------------------------------------------------------
+
+  User (independiente: autenticación y roles)
+
+  Estudiante ──┐
+               │
+  Curso ───────┼──► Matrícula ◄─── Aula
+               │      │
+               │      └── embebe ──► pagos[]  (subdocumentos)
+               │
+  Configuracion (independiente: singleton 'general', usada por facturas)
+
+  Es decir: Matrícula es la entidad que RELACIONA a Estudiante, Curso y Aula,
+  y dentro de cada matrícula vive el historial de pagos.
+
+
+================================================================================
+3. SEGURIDAD: BCRYPT, JWT Y SESIONES
+================================================================================
+
+--------------------------------------------------------------------------------
+3.1 ¿Qué campos se protegen con bcrypt? (bcryptjs, 10 rondas de salt)
+--------------------------------------------------------------------------------
+  1) User.password
+     → Se hashea automáticamente en el hook pre('save') del modelo User
+       cada vez que la contraseña se crea o cambia.
+     → Nunca se almacena ni se devuelve en texto plano.
+     → El login la verifica con compararPassword() (bcrypt.compare).
+
+  2) User.refreshToken
+     → El refresh token JWT se guarda HASHEADO con bcrypt en la base de datos
+       (authService.generarSesion).
+     → Así, aunque alguien robe la base de datos, no puede usar los tokens
+       para suplantar sesiones: solo tiene hashes, no tokens utilizables.
+
+  3) TokenAccion.codigoHash
+     → El código de verificación de 6 dígitos que se envía por correo se
+       guarda hasheado con bcrypt. En la base de datos nunca hay códigos
+       utilizables en texto plano.
+
+  4) TokenAccion.valor (cuando tipo = 'password')
+     → La nueva contraseña solicitada se guarda ya hasheada con bcrypt
+       mientras espera confirmación; nunca en texto plano.
+
+  Campos que NO usan bcrypt: ningún otro. Los datos de estudiantes, cursos,
+  aulas y matrículas no son secretos criptográficos; se protegen con
+  autenticación y roles, no con hash.
+
+--------------------------------------------------------------------------------
+3.2 ¿Qué entidad mantiene activa la sesión?
+--------------------------------------------------------------------------------
+  La entidad es USER, a través de su campo refreshToken, combinada con
+  DOS tokens JWT firmados con secretos distintos (src/config/jwt.js):
+
+  • accessToken  → dura 15 minutos. Identifica al usuario en cada petición.
+                   Contiene: id, email, rol. Firma: JWT_SECRET.
+  • refreshToken → dura 7 días. Sirve para renovar el accessToken sin
+                   volver a pedir contraseña. Firma: JWT_REFRESH_SECRET.
+
+  Ambos viajan en cookies httpOnly (inaccesibles para JavaScript del
+  navegador → protección contra XSS). Ver src/utils/cookies.js.
+
+  Ciclo de vida de la sesión:
+    LOGIN    → authService.login() valida credenciales, genera los 2 tokens,
+               guarda bcrypt(refreshToken) en User.refreshToken y fija cookies.
+    USO      → authMiddleware verifica el accessToken en cada petición.
+    EXPIRA   → si el accessToken expiró, el middleware intenta renovarlo
+               automáticamente con el refreshToken (refresh silencioso:
+               el usuario ni se entera).
+    REFRESH  → POST /api/auth/refresh: verifica firma del refresh token Y
+               que coincida (bcrypt.compare) con el hash guardado en User.
+               Genera un par de tokens NUEVOS (rotación: el viejo queda
+               inválido) y actualiza el hash en la DB.
+    LOGOUT   → authService.cerrarSesion() pone User.refreshToken = null:
+               la sesión muere en el servidor y no se puede renovar más.
+               Las cookies se limpian en el navegador.
+    CAMBIO DE CONTRASEÑA → al confirmarse con el código de correo, además
+               de cambiar la contraseña se cierra la sesión en el servidor
+               (refreshToken = null): el usuario entra con la clave nueva.
+
+  Regla práctica: si User.refreshToken es null, el usuario está desconectado
+  aunque tenga un accessToken que aún no expire (vive máximo 15 min más).
+
+--------------------------------------------------------------------------------
+3.3 Roles y permisos (RBAC - roleMiddleware)
+--------------------------------------------------------------------------------
+  • admin      → todo: empleados, configuración, credenciales, cursos, aulas,
+                 estudiantes, matrículas, pagos, facturas.
+  • empleado   → operación diaria: ver listados, registrar pagos, ver vistas.
+  • estudiante → rol reservado para el futuro portal del estudiante.
+
+
+================================================================================
+4. VALIDACIONES (DOBLE CAPA)
+================================================================================
+
+SchoolNode valida DOS veces: a la entrada (HTTP) y en la base de datos.
+
+CAPA 1 — express-validator (en las RUTAS, antes de tocar la DB):
+  • Rechaza peticiones mal formadas con 400 y un array "errores".
+  • El middleware validarCampos centraliza la respuesta (antes se repetía
+    el mismo bloque en cada controlador).
+  • Reglas por endpoint:
+      - login: email válido + password presente.
+      - estudiantes: nombre/apellido/cédula obligatorios; cédula solo
+        números; email y fechaNacimiento válidos si vienen.
+      - cursos: nombre, precio >= 0, duración.
+      - aulas: número, capacidad entera >= 1.
+      - empleados: email válido, password mínimo 8, rol admin/empleado.
+      - matrículas y pagos: los IDs deben ser ObjectId válidos (isMongoId);
+        el monto debe ser mayor a 0.
+      - TODOS los :id de la URL se validan con isMongoId (antes un id
+        malformado llegaba hasta Mongoose y explotaba como 500).
+  • Las rutas PUT (edición) también validan: antes no lo hacían y se podía
+    guardar basura (ej: precio negativo por edición). Ahora los campos son
+    opcionales pero, si vienen, deben ser válidos.
+
+CAPA 2 — Mongoose (en los ESQUEMAS, última línea de defensa):
+  • required, unique, enum, min, minlength y match con mensajes en español.
+  • Aunque algo se escape de express-validator (o se use el modelo desde un
+    script como el seed), la base de datos sigue protegida.
+  • Ejemplos: cédula solo dígitos, email con formato, capacidad >= 1,
+    precio >= 0, estados de matrícula dentro del enum.
+
+  Además, los modelos traducen el error 11000 de MongoDB (llave duplicada)
+  a mensajes claros: "Cédula ya registrada", "Email ya registrado",
+  "Ya existe un aula con ese número".
+
+
+================================================================================
+5. SERVICIOS (lógica que no pertenece a una sola entidad)
+================================================================================
+
+authService (src/services/authService.js)
+  • login(email, password)      → credenciales + tokens + guardar hash.
+  • renovarSesion(refreshToken) → rotación de tokens con doble verificación.
+  • cerrarSesion(usuario)       → invalida la sesión en el servidor.
+  • solicitarCambioEmail(usuario, nuevoEmail) → paso 1: genera código y lo
+    envía al NUEVO correo (verifica que le pertenece al usuario).
+  • solicitarCambioPassword(usuario, actual, nueva) → paso 1: verifica la
+    contraseña actual y envía el código al correo actual.
+  • confirmarCambio(usuario, codigo) → paso 2: verifica el código y aplica
+    el cambio. Si fue contraseña, cierra la sesión por seguridad.
+
+mailer (src/config/mailer.js) - Nodemailer + Gmail SMTP
+  • enviarCorreo({para, asunto, html}) → envía con la cuenta institucional
+    (EMAIL_USER / EMAIL_APP_PASSWORD en variables de entorno, nunca en código).
+  • plantillaCodigo(nombre, codigo, accion) → HTML del correo con el código.
+  • En NODE_ENV=test NO envía nada real: guarda el correo en memoria para
+    que las pruebas automaticen el flujo completo.
+
+pagoService (src/services/pagoService.js)
+  • stripeConfigurado()         → detecta si hay claves reales; si no, el
+                                  sistema trabaja en MODO SIMULACIÓN.
+  • crearSesionPago(matriculaId, monto)     → checkout de Stripe o sesión simulada.
+  • confirmarPagoSimulado(matriculaId, monto) → registra el pago simulado.
+  • registrarPagoFisico(matriculaId, monto)   → pago en efectivo presencial.
+  • procesarWebhookStripe(rawBody, firma)     → verifica la firma del webhook
+    y registra el pago. NOTA: el body llega CRUDO (express.raw antes de
+    express.json en app.js) porque Stripe firma el cuerpo exacto.
+
+facturaService (src/services/facturaService.js)
+  • generarFacturaPDF(tipo, matriculaId, res) → construye la factura PDF con
+    PDFKit usando la Configuración institucional. tipo: 'total' o 'aporte'.
+    Escribe el PDF directamente al stream de respuesta.
+
+
+================================================================================
+6. PRUEBAS AUTOMATIZADAS
+================================================================================
+
+Se ejecutan con:  npm test
+Usan el test runner nativo de Node (node:test) + MongoDB LOCAL
+(127.0.0.1) con bases de datos exclusivas de prueba: NO tocan Atlas.
+
+  tests/helpers.js       → conexión, limpieza, datos base, logger silenciado.
+  tests/modelos.test.js  → 24 pruebas unitarias de modelos: hashing bcrypt,
+                           refreshToken, cédulas/emails duplicados, cupos,
+                           pagos, vencimientos, migraciones, configuración.
+  tests/api.test.js      → 14 pruebas de integración HTTP: login, cookies,
+                           refresh, logout, roles (403), validaciones (400),
+                           y el flujo completo estudiante → matrícula →
+                           pagos → factura PDF.
+  tests/email.test.js    → 6 pruebas del flujo de verificación por correo:
+                           contraseña actual incorrecta, código al correo,
+                           código incorrecto/expirado, cambio aplicado y
+                           cierre de sesión tras cambiar la contraseña.
+  tests/webhook.test.js  → 3 pruebas del webhook de Stripe con firma HMAC
+                           real: pago registrado con firma válida, rechazo
+                           de firma falsa (400), eventos de otro tipo.
+
+  Verificación manual adicional: npm run seed + servidor local se probaron
+  de extremo a extremo (login, listados paginados, semaforización, pago
+  físico, factura PDF, logout) sin errores.
+
+
+================================================================================
+7. ESTRUCTURA FINAL DEL BACKEND
+================================================================================
+
+src/
+├── config/        db.js, jwt.js, stripe.js, mailer.js (Nodemailer + Gmail)
+├── models/        User, Estudiante, Curso, Aula, Matricula, Configuracion,
+│                  TokenAccion (códigos de verificación por correo)
+│                  (esquema + CRUD estático + métodos de instancia por entidad)
+├── services/      authService, pagoService, facturaService
+├── controllers/   solo orquestación (req → servicio/modelo → res)
+├── routes/        endpoints + validaciones express-validator
+├── middleware/    authMiddleware, roleMiddleware, validarCampos
+├── utils/         logger, cookies, ErrorAPI
+├── views/         plantillas EJS
+├── public/        CSS/JS del frontend
+└── seeds/         seed.js, arreglar-saldos.js
+
+================================================================================
+                              FIN DEL DOCUMENTO
+================================================================================

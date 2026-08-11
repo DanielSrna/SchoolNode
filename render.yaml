@@ -27,4 +27,8 @@ services:
       - key: STRIPE_WEBHOOK_SECRET
         sync: false
       - key: APP_URL
-        value: https://schoolnode.onrender.com
+        value: https://schoolnode-pwmx.onrender.com
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_APP_PASSWORD
+        sync: false

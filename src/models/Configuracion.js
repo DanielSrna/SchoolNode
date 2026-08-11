@@ -49,4 +49,44 @@ const configuracionSchema = new mongoose.Schema(
   }
 );
 
+// ============================================================
+// MÉTODOS ESTÁTICOS (funciones CRUD de la entidad en la DB)
+// ============================================================
+
+// Obtiene la configuración general; si no existe, la crea con valores por defecto
+configuracionSchema.statics.obtenerGeneral = async function () {
+  let config = await this.findOne({ clave: 'general' });
+  if (!config) {
+    config = new this({ clave: 'general' });
+    await config.save();
+  }
+  return config;
+};
+
+// Actualiza solo los campos recibidos de la configuración general
+configuracionSchema.statics.actualizarGeneral = async function (datos) {
+  const config = await this.obtenerGeneral();
+
+  const camposSimples = [
+    'nombreInstitucion',
+    'ubicacion',
+    'nit',
+    'telefono',
+    'email',
+    'colorPrimario',
+    'logoEmoji',
+  ];
+
+  camposSimples.forEach((campo) => {
+    if (datos[campo] !== undefined) config[campo] = datos[campo];
+  });
+
+  if (datos.facturacion) {
+    config.facturacion = { ...config.facturacion.toObject(), ...datos.facturacion };
+  }
+
+  await config.save();
+  return config;
+};
+
 module.exports = mongoose.model('Configuracion', configuracionSchema);

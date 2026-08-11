@@ -1,109 +1,68 @@
-const { validationResult } = require('express-validator');
 const Aula = require('../models/Aula');
-const Matricula = require('../models/Matricula');
+const { responderError } = require('../utils/ErrorAPI');
 const logger = require('../utils/logger');
+
+// Controlador de aulas: SOLO orquesta.
+// Todas las operaciones de datos viven en el modelo Aula.
 
 // GET /api/aulas
 const listarAulas = async (req, res) => {
   try {
     logger.proceso('Listando aulas');
-    const aulas = await Aula.find({ activo: true });
-    
-    // Calcular población actual para cada aula
-    const aulasConPoblacion = await Promise.all(
-      aulas.map(async (aula) => {
-        const poblacion = await aula.obtenerPoblacionActual();
-        return {
-          ...aula.toObject(),
-          poblacionActual: poblacion,
-        };
-      })
-    );
-    
-    res.json(aulasConPoblacion);
+    const aulas = await Aula.listarActivasConPoblacion();
+    res.json(aulas);
   } catch (error) {
     logger.error(`Error listando aulas: ${error.message}`);
-    res.status(500).json({ error: 'Error en el servidor' });
+    responderError(res, error);
   }
 };
 
 // GET /api/aulas/:id
 const obtenerAula = async (req, res) => {
   try {
-    const aula = await Aula.findById(req.params.id);
-    if (!aula || !aula.activo) {
-      logger.error(`Aula no encontrada: ${req.params.id}`);
-      return res.status(404).json({ error: 'Aula no encontrada' });
-    }
-
-    const poblacion = await aula.obtenerPoblacionActual();
-    res.json({
-      ...aula.toObject(),
-      poblacionActual: poblacion,
-    });
+    const aula = await Aula.obtenerActivaConPoblacion(req.params.id);
+    res.json(aula);
   } catch (error) {
     logger.error(`Error obteniendo aula: ${error.message}`);
-    res.status(500).json({ error: 'Error en el servidor' });
+    responderError(res, error);
   }
 };
 
 // POST /api/aulas
 const crearAula = async (req, res) => {
   try {
-    const errores = validationResult(req);
-    if (!errores.isEmpty()) {
-      logger.error(`Validación fallida: ${JSON.stringify(errores.array())}`);
-      return res.status(400).json({ errores: errores.array() });
-    }
-
-    const aula = new Aula(req.body);
-    await aula.save();
-
+    const aula = await Aula.crearNueva(req.body);
     logger.exito(`Aula creada: ${aula.numero}`);
     res.status(201).json(aula);
   } catch (error) {
     logger.error(`Error creando aula: ${error.message}`);
-    res.status(500).json({ error: 'Error en el servidor' });
+    responderError(res, error);
   }
 };
 
 // PUT /api/aulas/:id
 const actualizarAula = async (req, res) => {
   try {
-    const aula = await Aula.findById(req.params.id);
-    if (!aula || !aula.activo) {
-      logger.error(`Aula no encontrada: ${req.params.id}`);
-      return res.status(404).json({ error: 'Aula no encontrada' });
-    }
-
-    Object.assign(aula, req.body);
-    await aula.save();
-
+    const aula = await Aula.obtenerActivaPorId(req.params.id);
+    await aula.actualizarDatos(req.body);
     logger.exito(`Aula actualizada: ${aula.numero}`);
     res.json(aula);
   } catch (error) {
     logger.error(`Error actualizando aula: ${error.message}`);
-    res.status(500).json({ error: 'Error en el servidor' });
+    responderError(res, error);
   }
 };
 
 // DELETE /api/aulas/:id
 const eliminarAula = async (req, res) => {
   try {
-    const aula = await Aula.findById(req.params.id);
-    if (!aula) {
-      logger.error(`Aula no encontrada: ${req.params.id}`);
-      return res.status(404).json({ error: 'Aula no encontrada' });
-    }
-
-    aula.activo = false;
-    await aula.save();
-
+    const aula = await Aula.obtenerActivaPorId(req.params.id);
+    await aula.desactivar();
     logger.exito(`Aula eliminada: ${aula.numero}`);
     res.json({ mensaje: 'Aula eliminada exitosamente' });
   } catch (error) {
     logger.error(`Error eliminando aula: ${error.message}`);
-    res.status(500).json({ error: 'Error en el servidor' });
+    responderError(res, error);
   }
 };
 

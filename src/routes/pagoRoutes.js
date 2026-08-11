@@ -9,24 +9,24 @@ const {
 } = require('../controllers/pagoController');
 const authMiddleware = require('../middleware/authMiddleware');
 const roleMiddleware = require('../middleware/roleMiddleware');
+const validarCampos = require('../middleware/validarCampos');
+
+// Webhook de Stripe: se define ANTES del middleware de autenticación
+// porque Stripe no envía cookies de sesión; se valida con la firma.
+// El body crudo (raw) se configura en app.js para poder verificar la firma.
+router.post('/webhook/stripe', webhookStripe);
 
 router.use(authMiddleware);
-
-// Webhook no requiere autenticación estándar (lo valida Stripe)
-router.post(
-  '/webhook/stripe',
-  express.raw({ type: 'application/json' }),
-  webhookStripe
-);
 
 // Crear sesión de pago (Stripe real o simulación)
 router.post(
   '/crear-sesion',
   roleMiddleware(['admin', 'empleado']),
   [
-    body('matriculaId').notEmpty().withMessage('ID de matrícula requerido'),
-    body('monto').isFloat({ min: 0 }).withMessage('Monto válido requerido'),
+    body('matriculaId').isMongoId().withMessage('ID de matrícula no válido'),
+    body('monto').isFloat({ min: 1 }).withMessage('El monto debe ser mayor a 0'),
   ],
+  validarCampos,
   crearSesionPago
 );
 
@@ -38,9 +38,10 @@ router.post(
   '/fisico',
   roleMiddleware(['admin', 'empleado']),
   [
-    body('matriculaId').notEmpty().withMessage('ID de matrícula requerido'),
-    body('monto').isFloat({ min: 0 }).withMessage('Monto válido requerido'),
+    body('matriculaId').isMongoId().withMessage('ID de matrícula no válido'),
+    body('monto').isFloat({ min: 1 }).withMessage('El monto debe ser mayor a 0'),
   ],
+  validarCampos,
   pagoFisico
 );
 

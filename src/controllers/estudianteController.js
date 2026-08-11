@@ -1,127 +1,68 @@
-const { validationResult } = require('express-validator');
 const Estudiante = require('../models/Estudiante');
+const { responderError } = require('../utils/ErrorAPI');
 const logger = require('../utils/logger');
+
+// Controlador de estudiantes: SOLO orquesta.
+// Todas las operaciones de datos viven en el modelo Estudiante.
 
 // GET /api/estudiantes
 const listarEstudiantes = async (req, res) => {
   try {
     logger.proceso('Listando estudiantes');
-    const { page = 1, limit = 10, cedula } = req.query;
-    
-    let query = {};
-    if (cedula) {
-      query.cedula = { $regex: cedula, $options: 'i' };
-    }
-    
-    const estudiantes = await Estudiante.find(query)
-      .skip((page - 1) * limit)
-      .limit(parseInt(limit))
-      .sort({ createdAt: -1 });
-    
-    const total = await Estudiante.countDocuments(query);
-    
-    res.json({
-      estudiantes,
-      total,
-      pages: Math.ceil(total / limit),
-      currentPage: parseInt(page),
-    });
+    const resultado = await Estudiante.listar(req.query);
+    res.json(resultado);
   } catch (error) {
     logger.error(`Error listando estudiantes: ${error.message}`);
-    res.status(500).json({ error: 'Error en el servidor' });
+    responderError(res, error);
   }
 };
 
 // GET /api/estudiantes/:id
 const obtenerEstudiante = async (req, res) => {
   try {
-    const estudiante = await Estudiante.findById(req.params.id);
-    if (!estudiante) {
-      logger.error(`Estudiante no encontrado: ${req.params.id}`);
-      return res.status(404).json({ error: 'Estudiante no encontrado' });
-    }
+    const estudiante = await Estudiante.obtenerPorId(req.params.id);
     res.json(estudiante);
   } catch (error) {
     logger.error(`Error obteniendo estudiante: ${error.message}`);
-    res.status(500).json({ error: 'Error en el servidor' });
+    responderError(res, error);
   }
 };
 
 // POST /api/estudiantes
 const crearEstudiante = async (req, res) => {
   try {
-    const errores = validationResult(req);
-    if (!errores.isEmpty()) {
-      logger.error(`Validación fallida: ${JSON.stringify(errores.array())}`);
-      return res.status(400).json({ errores: errores.array() });
-    }
-
-    const { cedula } = req.body;
-    
-    // Verificar si cédula ya existe
-    const existe = await Estudiante.findOne({ cedula });
-    if (existe) {
-      logger.error(`Cédula ya registrada: ${cedula}`);
-      return res.status(400).json({ error: 'Cédula ya registrada' });
-    }
-
-    const estudiante = new Estudiante(req.body);
-    await estudiante.save();
-
-    logger.exito(`Estudiante creado: ${cedula}`);
+    const estudiante = await Estudiante.crearNuevo(req.body);
+    logger.exito(`Estudiante creado: ${estudiante.cedula}`);
     res.status(201).json(estudiante);
   } catch (error) {
     logger.error(`Error creando estudiante: ${error.message}`);
-    res.status(500).json({ error: 'Error en el servidor' });
+    responderError(res, error);
   }
 };
 
 // PUT /api/estudiantes/:id
 const actualizarEstudiante = async (req, res) => {
   try {
-    const estudiante = await Estudiante.findById(req.params.id);
-    if (!estudiante) {
-      logger.error(`Estudiante no encontrado: ${req.params.id}`);
-      return res.status(404).json({ error: 'Estudiante no encontrado' });
-    }
-
-    const { cedula } = req.body;
-    if (cedula) {
-      // Verificar si nueva cédula ya existe
-      const existe = await Estudiante.findOne({ cedula, _id: { $ne: req.params.id } });
-      if (existe) {
-        logger.error(`Cédula ya registrada: ${cedula}`);
-        return res.status(400).json({ error: 'Cédula ya registrada' });
-      }
-    }
-
-    Object.assign(estudiante, req.body);
-    await estudiante.save();
-
+    const estudiante = await Estudiante.obtenerPorId(req.params.id);
+    await estudiante.actualizarDatos(req.body);
     logger.exito(`Estudiante actualizado: ${estudiante.cedula}`);
     res.json(estudiante);
   } catch (error) {
     logger.error(`Error actualizando estudiante: ${error.message}`);
-    res.status(500).json({ error: 'Error en el servidor' });
+    responderError(res, error);
   }
 };
 
 // DELETE /api/estudiantes/:id
 const eliminarEstudiante = async (req, res) => {
   try {
-    const estudiante = await Estudiante.findById(req.params.id);
-    if (!estudiante) {
-      logger.error(`Estudiante no encontrado: ${req.params.id}`);
-      return res.status(404).json({ error: 'Estudiante no encontrado' });
-    }
-
-    await Estudiante.findByIdAndDelete(req.params.id);
-
+    const estudiante = await Estudiante.obtenerPorId(req.params.id);
+    await estudiante.eliminar();
     logger.exito(`Estudiante eliminado: ${estudiante.cedula}`);
     res.json({ mensaje: 'Estudiante eliminado exitosamente' });
   } catch (error) {
     logger.error(`Error eliminando estudiante: ${error.message}`);
-    res.status(500).json({ error: 'Error en el servidor' });
+    responderError(res, error);
   }
 };
 

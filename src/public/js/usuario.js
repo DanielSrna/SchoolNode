@@ -1,11 +1,12 @@
-// Usuario JavaScript - Cambiar ID y Contraseña
-document.addEventListener('DOMContentLoaded', async function() {
+// Usuario JavaScript - Cambio de correo y contraseña con verificación por email
+// Flujo: 1) se solicita el cambio → llega un código de 6 dígitos al correo
+//        2) el usuario ingresa el código → el cambio se aplica
+document.addEventListener('DOMContentLoaded', async function () {
   await cargarInfoUsuario();
 });
 
 async function cargarInfoUsuario() {
   try {
-    // Obtener info del usuario actual (necesitamos agregar este endpoint)
     const response = await fetch('/api/auth/me');
     if (response.ok) {
       const data = await response.json();
@@ -18,31 +19,59 @@ async function cargarInfoUsuario() {
   }
 }
 
-async function cambiarID() {
-  const nuevoId = document.getElementById('nuevoId').value;
-  
-  if (!nuevoId) {
-    alert('Por favor ingresa un nuevo ID');
+// Pide el código recibido por correo y lo envía al servidor para confirmar
+async function confirmarConCodigo() {
+  const codigo = prompt('Ingresa el código de 6 dígitos que llegó a tu correo:');
+  if (!codigo) return false;
+
+  const response = await fetch('/api/auth/confirmar-cambio', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ codigo: codigo.trim() }),
+  });
+
+  const data = await response.json();
+  if (response.ok) {
+    alert(data.mensaje);
+    if (data.cerrarSesion) {
+      window.location.href = '/login';
+      return true;
+    }
+    await cargarInfoUsuario();
+    return true;
+  }
+
+  alert(data.error || (data.errores && data.errores[0].msg) || 'Código inválido');
+  return false;
+}
+
+async function cambiarEmail() {
+  const nuevoEmail = document.getElementById('nuevoEmail').value.trim();
+
+  if (!nuevoEmail || !nuevoEmail.includes('@')) {
+    alert('Por favor ingresa un correo válido');
     return;
   }
-  
-  if (!confirm(`¿Confirmar cambio de ID a "${nuevoId}" con email?`)) {
+
+  if (!confirm(`¿Enviar código de verificación a "${nuevoEmail}"?`)) {
     return;
   }
-  
+
   try {
-    const response = await fetch('/api/auth/cambiar-id', {
+    const response = await fetch('/api/auth/cambiar-email', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nuevoId }),
+      body: JSON.stringify({ nuevoEmail }),
     });
-    
+
+    const data = await response.json();
     if (response.ok) {
-      alert('Se ha enviado un email de confirmación. Revisa tu bandeja de entrada.');
-      document.getElementById('nuevoId').value = '';
+      alert(data.mensaje);
+      if (await confirmarConCodigo()) {
+        document.getElementById('nuevoEmail').value = '';
+      }
     } else {
-      const error = await response.json();
-      alert(error.error || 'Error al cambiar ID');
+      alert(data.error || (data.errores && data.errores[0].msg) || 'Error al solicitar el cambio');
     }
   } catch (error) {
     console.error('Error:', error);
@@ -51,30 +80,38 @@ async function cambiarID() {
 }
 
 async function cambiarPassword() {
+  const passwordActual = document.getElementById('passwordActual').value;
   const nuevaPassword = document.getElementById('nuevaPassword').value;
-  
+
+  if (!passwordActual) {
+    alert('Ingresa tu contraseña actual');
+    return;
+  }
   if (!nuevaPassword || nuevaPassword.length < 8) {
-    alert('La contraseña debe tener al menos 8 caracteres');
+    alert('La nueva contraseña debe tener al menos 8 caracteres');
     return;
   }
-  
-  if (!confirm('¿Confirmar cambio de contraseña con email?')) {
+
+  if (!confirm('¿Enviar código de verificación a tu correo actual?')) {
     return;
   }
-  
+
   try {
     const response = await fetch('/api/auth/cambiar-password', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nuevaPassword }),
+      body: JSON.stringify({ passwordActual, nuevaPassword }),
     });
-    
+
+    const data = await response.json();
     if (response.ok) {
-      alert('Se ha enviado un email de confirmación. Revisa tu bandeja de entrada.');
-      document.getElementById('nuevaPassword').value = '';
+      alert(data.mensaje);
+      if (await confirmarConCodigo()) {
+        document.getElementById('passwordActual').value = '';
+        document.getElementById('nuevaPassword').value = '';
+      }
     } else {
-      const error = await response.json();
-      alert(error.error || 'Error al cambiar contraseña');
+      alert(data.error || (data.errores && data.errores[0].msg) || 'Error al solicitar el cambio');
     }
   } catch (error) {
     console.error('Error:', error);

@@ -58,7 +58,9 @@ En la sección **"Environment Variables"** agrega estas variables:
 | `STRIPE_SECRET_KEY` | `sk_test_...` | Opcional (para Stripe real) |
 | `STRIPE_PUBLISHABLE_KEY` | `pk_test_...` | Opcional |
 | `STRIPE_WEBHOOK_SECRET` | `whsec_...` | Opcional |
-| `APP_URL` | `https://tu-servicio.onrender.com` | Tu URL de Render |
+| `APP_URL` | `https://schoolnode-pwmx.onrender.com` | Tu URL de Render |
+| `EMAIL_USER` | `e.mechanic98@gmail.com` | Cuenta Gmail que envía los correos |
+| `EMAIL_APP_PASSWORD` | Contraseña de aplicación | [Crear aquí](https://myaccount.google.com/apppasswords) |
 
 ---
 
@@ -118,15 +120,44 @@ Y en **Build Command** pon: `npm install && ./scripts/seed.sh`
 
 ---
 
-## 8. Configurar Stripe Webhooks (opcional)
+## 8. Activar pagos reales con Stripe (paso a paso)
 
-Si quieres que Stripe funcione en producción:
+Sin claves de Stripe la app funciona en **modo simulación**. Para cobros reales
+(o de prueba con tarjeta `4242 4242 4242 4242`):
 
-1. Ve a [dashboard.stripe.com](https://dashboard.stripe.com/test/webhooks)
-2. Click en **"Add endpoint"**
-3. URL: `https://tu-servicio.onrender.com/api/pagos/webhook/stripe`
-4. Eventos: `checkout.session.completed`
-5. Copia el **"Signing secret"** y agrégalo como variable de entorno `STRIPE_WEBHOOK_SECRET`
+### Paso 1: Crear la cuenta y obtener las claves
+1. Crea tu cuenta en [stripe.com](https://stripe.com) (modo **Test** activado).
+2. Ve a **Developers → API keys**.
+3. Copia la **Secret key** (`sk_test_...`) y la **Publishable key** (`pk_test_...`).
+
+### Paso 2: Crear el webhook
+1. Ve a **Developers → Webhooks → Add endpoint**.
+2. URL del endpoint:
+   ```
+   https://schoolnode-pwmx.onrender.com/api/pagos/webhook/stripe
+   ```
+3. Evento a escuchar: `checkout.session.completed`.
+4. Copia el **Signing secret** (`whsec_...`).
+
+### Paso 3: Poner las variables en Render
+En tu servicio de Render → **Environment**:
+
+| Variable | Valor |
+|---|---|
+| `STRIPE_SECRET_KEY` | `sk_test_...` (del paso 1) |
+| `STRIPE_PUBLISHABLE_KEY` | `pk_test_...` (del paso 1) |
+| `STRIPE_WEBHOOK_SECRET` | `whsec_...` (del paso 2) |
+| `APP_URL` | `https://schoolnode-pwmx.onrender.com` |
+
+Guarda y Render redespliega solo. Desde ese momento:
+- "Pagar en línea" abre el **checkout real de Stripe** (en modo test no hay
+  cobros reales; usa la tarjeta `4242 4242 4242 4242`, cualquier fecha futura
+  y cualquier CVC).
+- Stripe avisa al webhook y el pago se registra solo en la matrícula.
+- El cliente vuelve a `/pagos/exito` (pantalla de confirmación).
+
+> 💡 Si las claves tienen el texto `replace` o `change`, el sistema detecta
+> que son placeholders y sigue en modo simulación: ideal para desarrollo local.
 
 ---
 

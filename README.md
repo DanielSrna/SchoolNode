@@ -101,17 +101,20 @@ docker-compose logs -f app
 SchoolNode/
 ├── src/
 │   ├── config/         # Configuraciones (DB, JWT, Stripe)
-│   ├── controllers/    # Lógica de controladores
-│   ├── models/         # Modelos Mongoose
-│   ├── routes/         # Rutas Express
-│   ├── middleware/     # Auth, RBAC
+│   ├── controllers/    # Solo orquestación (req → servicio/modelo → res)
+│   ├── models/         # Modelos Mongoose con su CRUD (statics) y acciones (methods)
+│   ├── services/       # Lógica transversal (auth/sesiones, pagos, facturas PDF)
+│   ├── routes/         # Rutas Express + validaciones (express-validator)
+│   ├── middleware/     # Auth, RBAC, validarCampos
 │   ├── views/          # Plantillas EJS
 │   ├── public/         # CSS, JS, imágenes
-│   ├── seeds/          # Script de seed
-│   └── utils/          # Logger y helpers
+│   ├── seeds/          # Scripts de seed y utilidades de datos
+│   └── utils/          # Logger, cookies de sesión, ErrorAPI
+├── tests/              # Pruebas automatizadas (node:test)
 ├── docker-compose.yml
 ├── Dockerfile
 ├── .env.example
+├── documentacion-entidades.txt  # Documentación técnica detallada
 └── README.md
 ```
 
@@ -187,6 +190,7 @@ El seed crea:
 ```bash
 npm run dev          # Desarrollo con nodemon
 npm start            # Producción
+npm test             # Ejecutar pruebas automatizadas (requiere MongoDB local)
 npm run seed         # Ejecutar seed de datos
 npm run docker:up    # Levantar contenedores
 npm run docker:down  # Detener contenedores
