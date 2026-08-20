@@ -21,7 +21,13 @@ async function cargarMatriculas() {
     const response = await fetch('/api/matriculas');
     const matriculas = await response.json();
 
-    const totalAlumnos = new Set(matriculas.map(m => m.estudiante._id)).size;
+    // Tolerar referencias rotas (estudiante/curso eliminados)
+    const nombreEstudiante = (m) =>
+      m.estudiante ? `${m.estudiante.nombre} ${m.estudiante.apellido}` : 'Estudiante eliminado';
+    const cedulaEstudiante = (m) => (m.estudiante ? m.estudiante.cedula : '-');
+    const nombreCurso = (m) => (m.curso ? m.curso.nombre : 'Curso eliminado');
+
+    const totalAlumnos = new Set(matriculas.map(m => (m.estudiante ? m.estudiante._id : 'x'))).size;
     const activas = matriculas.filter(m => m.estado === 'activa').length;
     const vencidas = matriculas.filter(m => m.estado === 'vencida' || m.estado === 'moroso').length;
 
@@ -65,15 +71,19 @@ async function cargarMatriculas() {
       }
 
       tr.innerHTML = `
-        <td>${mat.estudiante.nombre} ${mat.estudiante.apellido}</td>
-        <td>${mat.estudiante.cedula}</td>
-        <td>${mat.curso.nombre}</td>
+        <td>${nombreEstudiante(mat)}</td>
+        <td>${cedulaEstudiante(mat)}</td>
+        <td>${nombreCurso(mat)}</td>
         <td class="${fechaClass}">${fechaVenc.toLocaleDateString('es-CO')}<br><small>${diasRestantes} días</small></td>
         <td><span class="badge ${badgeClass}">${estadoText}</span></td>
         <td>${acciones}</td>
       `;
       tbody.appendChild(tr);
     });
+
+    if (matriculas.length === 0) {
+      mostrarVacio(tbody, 6, 'No hay matrículas registradas');
+    }
   } catch (error) {
     console.error('Error cargando matrículas:', error);
   }
@@ -152,12 +162,15 @@ async function crearMatricula(e) {
 async function verMatricula(id) {
   const response = await fetch(`/api/matriculas/${id}`);
   const mat = await response.json();
-  alert(`Matrícula: ${mat.estudiante.nombre} ${mat.estudiante.apellido}
-Curso: ${mat.curso.nombre}
-Aula: ${mat.aula.numero}
+  const estudiante = mat.estudiante
+    ? `${mat.estudiante.nombre} ${mat.estudiante.apellido}`
+    : 'Estudiante eliminado';
+  alert(`Matrícula: ${estudiante}
+Curso: ${mat.curso ? mat.curso.nombre : 'Curso eliminado'}
+Aula: ${mat.aula ? mat.aula.numero : '-'}
 Estado: ${mat.estado}
-Total Pagado: $${mat.totalPagado.toLocaleString()}
-Saldo Pendiente: $${mat.saldoPendiente.toLocaleString()}
+Total Pagado: $${(mat.totalPagado || 0).toLocaleString()}
+Saldo Pendiente: $${(mat.saldoPendiente || 0).toLocaleString()}
 Pagos: ${mat.pagos.length}`);
 }
 
@@ -223,5 +236,17 @@ async function cancelarMatricula(id) {
 }
 
 async function enviarNotificacion(id) {
-  alert('Notificación enviada al estudiante');
+  if (!confirm('¿Enviar recordatorio de pago por correo al estudiante?')) return;
+  try {
+    const response = await fetch(`/api/matriculas/${id}/notificar`, { method: 'POST' });
+    const data = await response.json().catch(() => null);
+    if (response.ok) {
+      alert(`Recordatorio enviado a ${data.para}`);
+    } else {
+      alert(data && data.error ? data.error : 'Error al enviar recordatorio');
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    alert('Error de conexión');
+  }
 }

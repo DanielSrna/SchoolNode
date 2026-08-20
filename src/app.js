@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const path = require('path');
+const rateLimit = require('express-rate-limit');
 const conectarDB = require('./config/db');
 const logger = require('./utils/logger');
 const { attachUser } = require('./middleware/authMiddleware');
@@ -18,6 +19,7 @@ const matriculaRoutes = require('./routes/matriculaRoutes');
 const pagoRoutes = require('./routes/pagoRoutes');
 const facturaRoutes = require('./routes/facturaRoutes');
 const configuracionRoutes = require('./routes/configuracionRoutes');
+const notificacionRoutes = require('./routes/notificacionRoutes');
 
 const app = express();
 
@@ -30,6 +32,37 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
+// ============================================================
+// RATE LIMITING (protección contra fuerza bruta y abuso)
+//   - Login: límite estricto (por IP)
+//   - API general: límite amplio (por IP)
+// El webhook de Stripe queda EXENTO (Stripe usa sus propios IPs
+// y reintentos legítimos).
+// Configurable con LOGIN_RATE_LIMIT_MAX / API_RATE_LIMIT_MAX.
+// ============================================================
+const limiteLogin = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: parseInt(process.env.LOGIN_RATE_LIMIT_MAX) || (process.env.NODE_ENV === 'test' ? 100 : 10),
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Demasiados intentos de inicio de sesión. Intenta de nuevo en 15 minutos' },
+  skip: (req) => process.env.NODE_ENV === 'test' && !process.env.LOGIN_RATE_LIMIT_MAX,
+});
+
+const limiteAPI = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: parseInt(process.env.API_RATE_LIMIT_MAX) || (process.env.NODE_ENV === 'test' ? 1000 : 300),
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Demasiadas peticiones. Intenta de nuevo más tarde' },
+  skip: (req) =>
+    req.path.startsWith('/pagos/webhook') || // Stripe queda exento
+    (process.env.NODE_ENV === 'test' && !process.env.API_RATE_LIMIT_MAX),
+});
+
+app.use('/api/auth/login', limiteLogin);
+app.use('/api', limiteAPI);
+
 // Servir archivos estáticos
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -39,6 +72,12 @@ app.set('views', path.join(__dirname, 'views'));
 
 // Middleware para adjuntar usuario a res.locals (disponible en todas las vistas)
 app.use(attachUser);
+
+// Las credenciales de prueba solo se muestran fuera de producción
+app.use((req, res, next) => {
+  res.locals.mostrarCredenciales = process.env.NODE_ENV !== 'production';
+  next();
+});
 
 // Rutas API
 app.use('/api/auth', authRoutes);
@@ -50,6 +89,7 @@ app.use('/api/matriculas', matriculaRoutes);
 app.use('/api/pagos', pagoRoutes);
 app.use('/api/pagos', facturaRoutes);
 app.use('/api/configuracion', configuracionRoutes);
+app.use('/api/notificaciones', notificacionRoutes);
 
 // Ruta principal - redirigir según estado de autenticación
 app.get('/', (req, res) => {
@@ -152,6 +192,10 @@ app.get('/ajustes', requireAdmin, (req, res) => {
 
 app.get('/ayuda', requireAuth, (req, res) => {
   res.render('ayuda', { title: 'Ayuda' });
+});
+
+app.get('/notificaciones', requireAuth, (req, res) => {
+  res.render('notificaciones', { title: 'Notificaciones' });
 });
 
 // Manejo de errores 404

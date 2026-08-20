@@ -7,10 +7,23 @@
       <small class="text-muted" id="headerUbicacion"></small>
     </div>
   </div>
-  <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalUsuario">
-    Mi Usuario
-  </button>
+  <div class="d-flex align-items-center gap-2">
+    <button type="button" class="btn btn-outline-secondary" id="btnModoOscuro" title="Cambiar a modo oscuro" aria-label="Cambiar a modo oscuro">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 .278a.768.768 0 0 1 .08.858 7.208 7.208 0 0 0-.878 3.46c0 4.021 3.278 7.277 7.318 7.277.527 0 1.04-.055 1.533-.16a.787.787 0 0 1 .81.316.733.733 0 0 1-.031.893A8.349 8.349 0 0 1 8.344 16C3.734 16 0 12.286 0 7.71 0 4.266 2.114 1.312 5.124.06A.752.752 0 0 1 6 .278z"/></svg>
+    </button>
+    <a href="/notificaciones" class="btn btn-outline-secondary position-relative" title="Notificaciones" aria-label="Notificaciones">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2zM8 1.918l-.797.161A4.002 4.002 0 0 0 4 6c0 .628-.134 2.197-.459 3.742-.16.767-.376 1.566-.663 2.258h10.244c-.287-.692-.502-1.49-.663-2.258C12.134 8.197 12 6.628 12 6a4.002 4.002 0 0 0-3.203-3.92L8 1.917zM14.22 12c.223.447.481.801.78 1H1c.299-.199.557-.553.78-1C2.68 10.2 3 6.88 3 6c0-2.42 1.72-4.44 4.005-4.901a1 1 0 1 1 1.99 0A5.002 5.002 0 0 1 13 6c0 .88.32 4.2 1.22 6z"/></svg>
+      <span id="notifBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="display:none;">0</span>
+    </a>
+    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalUsuario" title="Mi Usuario">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/><path d="M2 12.5A1.5 1.5 0 0 1 3.5 11h9a1.5 1.5 0 0 1 1.5 1.5v1a.5.5 0 0 1-.5.5H2.5a.5.5 0 0 1-.5-.5v-1z"/><path d="M0 1.5A1.5 1.5 0 0 1 1.5 0h13A1.5 1.5 0 0 1 16 1.5v3A1.5 1.5 0 0 1 14.5 6h-13A1.5 1.5 0 0 1 0 4.5v-3zM1 1v2.5A.5.5 0 0 0 1.5 4h13a.5.5 0 0 0 .5-.5V1H1z"/></svg>
+      <span class="btn-header-texto">Mi Usuario</span>
+    </button>
+  </div>
 </div>
+
+<!-- Script de contador de notificaciones -->
+<script src="/js/notificaciones.js"></script>
 
 <!-- Script para cargar configuración dinámica desde la BD -->
 <script src="/js/config-loader.js"></script>
@@ -25,9 +38,12 @@
 <!-- Script de auto-refresh de tokens -->
 <script src="/js/auth-manager.js"></script>
 
+<!-- Script del modo oscuro -->
+<script src="/js/dark-mode.js"></script>
+
 <!-- Modal de Usuario -->
 <div class="modal fade" id="modalUsuario" tabindex="-1">
-  <div class="modal-dialog">
+  <div class="modal-dialog modal-fullscreen-sm-down">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title">Información del Usuario</h5>
@@ -52,7 +68,7 @@
           <input type="email" class="form-control" id="nuevoEmail" placeholder="nuevo@correo.com">
           <small class="text-muted">Se enviará un código de verificación al nuevo correo</small>
         </div>
-        <button class="btn btn-warning btn-sm" onclick="cambiarEmail()">
+        <button class="btn btn-primary btn-sm" onclick="cambiarEmail()">
           Enviar Código
         </button>
 
@@ -65,7 +81,7 @@
           <input type="password" class="form-control" id="nuevaPassword" placeholder="Nueva contraseña" minlength="8">
           <small class="text-muted">Mínimo 8 caracteres. Recibirás un código en tu correo actual</small>
         </div>
-        <button class="btn btn-warning btn-sm" onclick="cambiarPassword()">
+        <button class="btn btn-primary btn-sm" onclick="cambiarPassword()">
           Enviar Código
         </button>
       </div>

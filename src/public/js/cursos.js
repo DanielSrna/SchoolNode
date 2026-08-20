@@ -18,9 +18,9 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   if (window.esEmpleado) {
-    const btnNuevaAula = document.querySelector('[data-bs-target="#modalNuevaAula"]');
+    const btnNuevaAula = document.querySelector('[onclick="abrirNuevaAula()"]');
     if (btnNuevaAula) btnNuevaAula.style.display = 'none';
-    const btnNuevoCurso = document.querySelector('[data-bs-target="#modalNuevoCurso"]');
+    const btnNuevoCurso = document.querySelector('[onclick="abrirNuevoCurso()"]');
     if (btnNuevoCurso) btnNuevoCurso.style.display = 'none';
   }
 
@@ -42,6 +42,22 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 });
+
+// Abre el modal SIEMPRE limpio para crear un aula nueva
+function abrirNuevaAula() {
+  aulaEditandoId = null;
+  document.getElementById('formNuevaAula').reset();
+  document.querySelector('#modalNuevaAula .modal-title').textContent = 'Crear Nueva Aula';
+  new bootstrap.Modal(document.getElementById('modalNuevaAula')).show();
+}
+
+// Abre el modal SIEMPRE limpio para crear un curso nuevo
+function abrirNuevoCurso() {
+  cursoEditandoId = null;
+  document.getElementById('formNuevoCurso').reset();
+  document.querySelector('#modalNuevoCurso .modal-title').textContent = 'Crear Nuevo Curso';
+  new bootstrap.Modal(document.getElementById('modalNuevoCurso')).show();
+}
 
 async function cargarCursos() {
   try {
@@ -76,6 +92,10 @@ async function cargarCursos() {
         <td>${acciones}</td>
       `;
       tbody.appendChild(tr);
+    }
+
+    if (cursos.length === 0) {
+      mostrarVacio(tbody, 6, 'No hay cursos registrados');
     }
   } catch (error) {
     console.error('Error cargando cursos:', error);
@@ -118,6 +138,10 @@ async function cargarAulas() {
       `;
       tbody.appendChild(tr);
     });
+
+    if (aulas.length === 0) {
+      mostrarVacio(tbody, 6, 'No hay aulas registradas');
+    }
   } catch (error) {
     console.error('Error cargando aulas:', error);
   }

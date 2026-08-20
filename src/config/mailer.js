@@ -81,9 +81,47 @@ const plantillaCodigo = (nombre, codigo, accion) => `
   </div>
 `;
 
+// Plantilla HTML del correo de recordatorio de pago (cercanía de vencimiento)
+const plantillaRecordatorioPago = ({ nombre, curso, saldo, fechaVencimiento, appUrl }) => {
+  const saldoTexto = `$${Number(saldo || 0).toLocaleString('es-CO')}`;
+  const fechaTexto = new Date(fechaVencimiento).toLocaleDateString('es-CO', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto;">
+      <div style="background: #dc3545; color: #fff; padding: 16px; text-align: center; border-radius: 8px 8px 0 0;">
+        <h2 style="margin: 0;">SchoolNode</h2>
+        <p style="margin: 4px 0 0; font-size: 13px;">Recordatorio de pago</p>
+      </div>
+      <div style="border: 1px solid #ddd; border-top: none; padding: 24px; border-radius: 0 0 8px 8px;">
+        <p>Hola <strong>${nombre}</strong>,</p>
+        <p>Te recordamos que tu matrícula del curso <strong>${curso}</strong>
+           tiene un saldo pendiente de:</p>
+        <p style="text-align: center; font-size: 28px; font-weight: bold; color: #dc3545; margin: 20px 0;">
+          ${saldoTexto}
+        </p>
+        <p>La fecha de vencimiento de tu matrícula es el <strong>${fechaTexto}</strong>.
+           Realiza tu pago a tiempo para mantener tu cupo y evitar el estado de morosidad.</p>
+        <p style="text-align: center; margin: 24px 0;">
+          <a href="${appUrl || '#'}/pagos"
+             style="background: #198754; color: #fff; text-decoration: none; padding: 12px 28px; border-radius: 6px; display: inline-block;">
+            Ir a pagar
+          </a>
+        </p>
+        <p style="color: #888; font-size: 12px; margin-top: 24px;">
+          Este es un correo automático, por favor no respondas.
+        </p>
+      </div>
+    </div>
+  `;
+};
+
 module.exports = {
   enviarCorreo,
   plantillaCodigo,
+  plantillaRecordatorioPago,
   correoConfigurado,
   // Solo para pruebas
   _obtenerUltimoCorreoTest: () => ultimoCorreoTest,

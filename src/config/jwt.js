@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 
 const ACCESS_TOKEN_EXPIRATION = '15m';
 const REFRESH_TOKEN_EXPIRATION = '7d';
@@ -12,8 +13,12 @@ const generarAccessToken = (usuario) => {
 };
 
 const generarRefreshToken = (usuario) => {
+  // jti aleatorio PRIMERO en el payload: garantiza tokens únicos aunque se
+  // emitan en el mismo segundo. Además, bcryptjs trunca a 72 bytes al comparar,
+  // así que la parte aleatoria debe quedar dentro de ese límite (si el jti va
+  // después del id, el prefijo de 72 bytes es idéntico y el reuso se aprueba).
   return jwt.sign(
-    { id: usuario._id },
+    { jti: crypto.randomUUID(), id: usuario._id },
     process.env.JWT_REFRESH_SECRET,
     { expiresIn: REFRESH_TOKEN_EXPIRATION }
   );

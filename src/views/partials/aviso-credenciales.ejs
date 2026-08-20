@@ -1,4 +1,5 @@
-<!-- Aviso flotante con credenciales de prueba -->
+<% if (typeof mostrarCredenciales !== 'undefined' && mostrarCredenciales) { %>
+<!-- Aviso flotante con credenciales de prueba (solo en desarrollo) -->
 <div class="aviso-credenciales" id="avisoCredenciales">
   <button class="cerrar" onclick="document.getElementById('avisoCredenciales').style.display='none'">×</button>
   <div class="titulo">Credenciales de prueba</div>
@@ -9,3 +10,4 @@
     <strong>Empleado:</strong> <span>empleado1@schoolnode.com</span> / <span>Empleado123!</span>
   </div>
 </div>
+<% } %>

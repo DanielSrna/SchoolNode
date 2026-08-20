@@ -10,6 +10,8 @@
     "seed": "node src/seeds/seed.js",
     "arreglar-saldos": "node src/seeds/arreglar-saldos.js",
     "test": "node --test \"tests/*.test.js\"",
+    "check:frontend": "node scripts/verificar-frontend.js",
+    "check:correos": "node scripts/verificar-correos.js",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f"
@@ -32,6 +34,7 @@
     "dotenv": "^16.4.5",
     "ejs": "^3.1.10",
     "express": "^4.19.2",
+    "express-rate-limit": "^8.6.2",
     "express-validator": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.5.1",

@@ -218,3 +218,156 @@ test('Token: código expirado se rechaza (400)', async () => {
   assert.strictEqual(res.status, 400);
   assert.match((await res.json()).error, /expiró/);
 });
+
+// ============================================================
+// RECORDATORIO DE PAGO (cercanía de vencimiento)
+// ============================================================
+
+test('Recordatorio: envía correo al email del estudiante con saldo y vencimiento', async () => {
+  const Estudiante = require('../src/models/Estudiante');
+  const Matricula = require('../src/models/Matricula');
+
+  const estudiante = await Estudiante.crearNuevo({
+    nombre: 'Estudiante',
+    apellido: 'Recordatorio',
+    cedula: '888000111',
+    email: 'estudiante.recordatorio@test.com',
+  });
+  const curso = await require('../src/models/Curso').crearNuevo({
+    nombre: 'Curso Recordatorio',
+    precio: 250000,
+    duracion: '2 semanas',
+  });
+  const aula = await require('../src/models/Aula').crearNueva({
+    numero: 'REC1',
+    capacidad: 10,
+  });
+  const matricula = await Matricula.crearNueva({
+    estudianteId: estudiante._id,
+    cursoId: curso._id,
+    aulaId: aula._id,
+  });
+
+  const resLogin = await api('/api/auth/login', {
+    method: 'POST',
+    body: { email: 'empleado.nuevo@test.com', password: 'NuevaClave123!' },
+  });
+  const cookie = extraerCookies(resLogin);
+
+  const res = await api(`/api/matriculas/${matricula._id}/notificar`, {
+    method: 'POST',
+    cookie,
+  });
+  assert.strictEqual(res.status, 200);
+  const resultado = await res.json();
+  assert.strictEqual(resultado.enviado, true);
+  assert.strictEqual(resultado.para, 'estudiante.recordatorio@test.com');
+
+  // El correo capturado en modo test tiene los datos del recordatorio
+  const correo = mailer._obtenerUltimoCorreoTest();
+  assert.ok(correo, 'Debe haberse generado el correo');
+  const para = Array.isArray(correo.to) ? correo.to[0].address : correo.to;
+  assert.strictEqual(para, 'estudiante.recordatorio@test.com');
+  assert.match(correo.subject, /Recordatorio de pago/);
+  assert.match(correo.html, /250\.000/);
+  assert.match(correo.html, /Curso Recordatorio/);
+});
+
+test('Recordatorio: sin sesión responde 401', async () => {
+  const idFalso = '000000000000000000000000';
+  const res = await api(`/api/matriculas/${idFalso}/notificar`, { method: 'POST' });
+  assert.strictEqual(res.status, 401);
+});
+
+test('Recordatorio: matrícula inexistente responde 404', async () => {
+  const idInexistente = new (require('mongoose').Types.ObjectId)();
+  const resLogin = await api('/api/auth/login', {
+    method: 'POST',
+    body: { email: 'empleado.nuevo@test.com', password: 'NuevaClave123!' },
+  });
+  const cookie = extraerCookies(resLogin);
+
+  const res = await api(`/api/matriculas/${idInexistente}/notificar`, {
+    method: 'POST',
+    cookie,
+  });
+  assert.strictEqual(res.status, 404);
+});
+
+test('Recordatorio: estudiante sin correo responde 400', async () => {
+  const Estudiante = require('../src/models/Estudiante');
+  const Matricula = require('../src/models/Matricula');
+
+  const estudiante = await Estudiante.crearNuevo({
+    nombre: 'Sin',
+    apellido: 'Correo',
+    cedula: '888000222',
+  });
+  const curso = await require('../src/models/Curso').crearNuevo({
+    nombre: 'Curso Sin Correo',
+    precio: 100000,
+    duracion: '1 semana',
+  });
+  const aula = await require('../src/models/Aula').crearNueva({
+    numero: 'REC2',
+    capacidad: 10,
+  });
+  const matricula = await Matricula.crearNueva({
+    estudianteId: estudiante._id,
+    cursoId: curso._id,
+    aulaId: aula._id,
+  });
+
+  const resLogin = await api('/api/auth/login', {
+    method: 'POST',
+    body: { email: 'empleado.nuevo@test.com', password: 'NuevaClave123!' },
+  });
+  const cookie = extraerCookies(resLogin);
+
+  const res = await api(`/api/matriculas/${matricula._id}/notificar`, {
+    method: 'POST',
+    cookie,
+  });
+  assert.strictEqual(res.status, 400);
+  assert.match((await res.json()).error, /no tiene un correo/);
+});
+
+test('Recordatorio: matrícula sin saldo pendiente responde 400', async () => {
+  const Estudiante = require('../src/models/Estudiante');
+  const Matricula = require('../src/models/Matricula');
+
+  const estudiante = await Estudiante.crearNuevo({
+    nombre: 'Pago',
+    apellido: 'Total',
+    cedula: '888000333',
+    email: 'pagado@test.com',
+  });
+  const curso = await require('../src/models/Curso').crearNuevo({
+    nombre: 'Curso Pagado',
+    precio: 100000,
+    duracion: '1 semana',
+  });
+  const aula = await require('../src/models/Aula').crearNueva({
+    numero: 'REC3',
+    capacidad: 10,
+  });
+  const matricula = await Matricula.crearNueva({
+    estudianteId: estudiante._id,
+    cursoId: curso._id,
+    aulaId: aula._id,
+  });
+  await matricula.agregarPago(100000, 'fisico');
+
+  const resLogin = await api('/api/auth/login', {
+    method: 'POST',
+    body: { email: 'empleado.nuevo@test.com', password: 'NuevaClave123!' },
+  });
+  const cookie = extraerCookies(resLogin);
+
+  const res = await api(`/api/matriculas/${matricula._id}/notificar`, {
+    method: 'POST',
+    cookie,
+  });
+  assert.strictEqual(res.status, 400);
+  assert.match((await res.json()).error, /no tiene saldo pendiente/);
+});

@@ -81,6 +81,19 @@ const migrarEstudiante = async (req, res) => {
   }
 };
 
+// POST /api/matriculas/:id/notificar
+const notificarPago = async (req, res) => {
+  try {
+    const pagoService = require('../services/pagoService');
+    const resultado = await pagoService.enviarRecordatorioPago(req.params.id);
+    logger.exito(`Recordatorio enviado para matrícula ${req.params.id}`);
+    res.json(resultado);
+  } catch (error) {
+    logger.error(`Error enviando recordatorio: ${error.message}`);
+    responderError(res, error);
+  }
+};
+
 module.exports = {
   listarMatriculas,
   obtenerMatricula,
@@ -88,4 +101,5 @@ module.exports = {
   actualizarMatricula,
   eliminarMatricula,
   migrarEstudiante,
+  notificarPago,
 };

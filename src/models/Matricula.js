@@ -77,8 +77,13 @@ const matriculaSchema = new mongoose.Schema(
   }
 );
 
-// Índice compuesto para evitar matrículas duplicadas (mismo estudiante + mismo curso)
-matriculaSchema.index({ estudiante: 1, curso: 1 }, { unique: true });
+// Índice único PARCIAL: evita más de una matrícula ACTIVA por estudiante+curso,
+// pero permite re-matricularse después de cancelar (la regla del modelo solo
+// bloquea las matrículas en estado 'activa').
+matriculaSchema.index(
+  { estudiante: 1, curso: 1 },
+  { unique: true, partialFilterExpression: { estado: 'activa' } }
+);
 
 // ============================================================
 // HOOKS
@@ -146,8 +151,10 @@ matriculaSchema.methods.recalcularTotales = async function () {
   return this;
 };
 
-// Si pasó la fecha de vencimiento y aún hay saldo, pasa a estado "moroso"
+// Si pasó la fecha de vencimiento y aún hay saldo, pasa a estado "moroso".
+// Las matrículas CANCELADAS nunca se tocan (un borrado lógico es definitivo).
 matriculaSchema.methods.verificarVencimiento = function () {
+  if (this.estado === 'cancelada') return false;
   const hoy = new Date();
   if (hoy > this.fechaVencimiento && this.saldoPendiente > 0) {
     this.estado = 'moroso';

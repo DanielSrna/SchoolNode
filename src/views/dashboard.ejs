@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= title || 'Dashboard' %> - SchoolNode</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="/vendor/bootstrap/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
   <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
@@ -53,34 +53,35 @@
           </div>
         </div>
 
-        <!-- Recent Activity -->
+        <!-- Resumen del Sistema -->
         <div class="card">
           <div class="card-header">
             <h5 class="mb-0">Resumen del Sistema</h5>
           </div>
           <div class="card-body">
             <p>Bienvenido al sistema de gestión escolar SchoolNode.</p>
-            <p>Este es un prototipo funcional TRL5 que demuestra:</p>
+            <p>Este panel centraliza la operación administrativa y financiera del centro de enseñanza:</p>
             <ul>
               <li>Gestión completa de estudiantes, cursos, aulas y matrículas</li>
-              <li>Sistema de autenticación con JWT y roles</li>
-              <li>Integración con pasarela de pagos Stripe</li>
-              <li>Control de capacidad de aulas</li>
-              <li>Semaforización de matrículas por vencimiento</li>
+              <li>Control de capacidad de aulas y semaforización de matrículas por vencimiento</li>
+              <li>Registro de pagos físicos y en línea con pasarela de pagos</li>
+              <li>Generación de facturas PDF y conciliación automática de saldos</li>
+              <li>Acceso seguro con autenticación JWT y control por roles</li>
             </ul>
-            
+            <% if (typeof mostrarCredenciales !== 'undefined' && mostrarCredenciales) { %>
             <div class="alert alert-info mt-4">
               <strong>Credenciales de prueba:</strong><br>
               Admin: admin@schoolnode.com / Admin123!<br>
               Empleado: empleado1@schoolnode.com / Empleado123!
             </div>
+            <% } %>
           </div>
         </div>
       </main>
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/vendor/bootstrap/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
   <script src="/js/dashboard.js"></script>
   <script src="/js/usuario.js"></script>
 </body>

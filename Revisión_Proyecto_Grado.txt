@@ -1,0 +1,291 @@
+================================================================================
+REVISIÓN DEL DOCUMENTO: SchoolNode_DanielSerna.md
+Proyecto de grado aplicado - Ingeniería de Sistemas (UNAD)
+Fecha de revisión: agosto 2026
+================================================================================
+
+--------------------------------------------------------------------------------
+1. VEREDICTO GENERAL
+--------------------------------------------------------------------------------
+La estructura base es PROFESIONAL y cumple con el esqueleto de un proyecto de
+grado aplicado de la UNAD: portada, resumen/abstract, tabla de contenido,
+introducción, justificación, objetivos, metodología, stack tecnológico, marco
+referencial, cronograma, recursos, resultados esperados, desarrollo frontend,
+desarrollo backend con modelado detallado de entidades, seguridad, validaciones,
+referencias y apéndices.
+
+Los puntos FUERTES del documento:
+  - El modelado de entidades (User, Estudiante, Curso, Aula, Matricula,
+    Configuración) es muy completo: campos, restricciones, relaciones,
+    funciones de instancia y estáticas. Esto demuestra dominio técnico real.
+  - La sección de Seguridad (bcrypt, rotación de tokens, RBAC) es sólida y
+    demuestra criterio de ingeniería.
+  - La doble capa de validaciones (express-validator + Mongoose) es un
+    diferenciador valioso frente a otros proyectos.
+  - Referencias bibliográficas formales (IEEE/ACM/NIST/IETF) bien elegidas.
+  - El acta de consentimiento institucional es un gran plus para un proyecto
+    aplicado.
+
+El documento NO está listo para entrega: tiene secciones obligatorias ausentes
+(conclusiones, resultados obtenidos, pruebas, despliegue, marco legal,
+antecedentes), errores de numeración, y algunas inconsistencias internas.
+A continuación el detalle.
+
+--------------------------------------------------------------------------------
+2. ERRORES E INCONSISTENCIAS DETECTADOS (corregir sí o sí)
+--------------------------------------------------------------------------------
+
+[E1] FASE 4 DUPLICADA en "Fases de ejecución del proyecto":
+    Hay dos secciones llamadas "Fase 4" (Integración de Stripe y Desarrollo
+    Frontend). Además el cronograma (Tabla 1) lista 6 fases, pero en la
+    sección de fases solo se describen 4-5. Faltan las fases:
+    - "Pruebas y Despliegue" (Fase 5 del cronograma)
+    - "Documentación" (Fase 6 del cronograma)
+    -> Renumerar: Fase 1 Requerimientos, 2 Diseño, 3 Backend, 4 Stripe,
+       5 Frontend, 6 Pruebas y Despliegue, 7 Documentación. O alinear el
+       cronograma con las fases descritas.
+
+[E2] TECNOLOGÍA DE DESPLIEGUE INCONSISTENTE:
+    El documento menciona RAILWAY como PaaS de despliegue (secciones Stack
+    Tecnológico, Marco teórico, Tabla 2 Recursos), pero la aplicación real
+    está desplegada en RENDER (https://schoolnode-pwmx.onrender.com).
+    -> Decidir UNA plataforma y unificar en todo el documento (o explicar
+       que se migró de Railway a Render, lo cual también es válido como
+       resultado de la experiencia).
+
+[E3] RESUMEN vs ABSTRACT NO COINCIDEN:
+    El Resumen dice "MVC de código abierto" (línea 23), el Abstract dice
+    "open-source RESTful API" (línea 33). Son dos descripciones distintas
+    de la misma aplicación.
+    -> Unificar: ejemplo: "aplicación web bajo arquitectura MVC con API REST".
+
+[E4] FIGURAS MAL NUMERADAS:
+    - "Figura 7" aparece DOS veces (Vista de login y Consentimiento
+      académico). La del consentimiento debería ser Figura 27 o posterior.
+    - Typo "Vista de usuaario" (Figura 19).
+    - La Lista de Figuras no coincide con las figuras que realmente están
+      en el cuerpo (faltan varias numeradas, sobran otras).
+    -> Renumerar TODAS las figuras en orden de aparición real.
+
+[E5] TABLA DE CONTENIDO:
+    - "Marco teorico" sin tilde (debe ser "Marco teórico").
+    - La TOC lista "Desarrollo Frontend 32 / Pantallas 32 / Modelo de
+      usuario-aplicación 49 / Desarrollo Backend 51..." pero el cuerpo es
+      mucho más corto: los números de página no coinciden.
+    - Los números de página incrustados (1, 2, 3...) al final de cada
+      sección quedarán mal al exportar a PDF con la paginación real.
+    -> Generar la TOC automáticamente al exportar, y eliminar los números
+       manuales.
+
+[E6] "Resultados esperados" (Tabla 3) vs resultados REALES:
+    La tabla dice "Sistema desplegado en Railway con pagos activos", pero
+    el proyecto está en Render y hay que verificar si la pasarela Stripe
+    está en modo producción o test. La Tabla 3 además mezcla "resultado"
+    con "entregable". Ver sección 3 (resultados obtenidos).
+
+[E7] DETALLES DE REDACCIÓN:
+    - Línea 23: "SchoolNode, un MVC de código abierto diseñada..." -> debe
+      ser "una aplicación web ... diseñada" (concordancia).
+    - Línea 958: "Ninguna, está entidad" -> "esta entidad".
+    - Línea 1190: "al rededor" -> "alrededor".
+    - "Colección: matricula" (línea 830) -> en plural "matriculas".
+    - "Colección: configuración" -> "configuraciones" (el modelo usa la
+      colección que Mongoose pluralice: configuraciones).
+    - Faltan tildes en varias palabras (trasavilidad -> trazabilidad,
+      estandares -> estándares).
+    -> Pasar el texto por un corrector ortográfico antes de entregar.
+
+[E8] LAS CAPTURAS DE PANTALLA:
+    Las secciones de "Pantallas de la aplicación" y figuras técnicas
+    contienen TEXTOS OCR con símbolos raros (<logo>, <titulo seccion>,
+    "eeeee Ee Eee", etc.).
+    -> IMPORTANTE: reemplazar cada bloque de texto OCR por la captura de
+       pantalla REAL de la aplicación (login, alumnos, cursos, aulas,
+       pagos, ajustes, usuario, ayuda, matrícula, notificaciones, pasarela
+       Stripe, y los diagramas: MVC, routing, RBAC, pasarela, despliegue,
+       diagrama ER).
+
+--------------------------------------------------------------------------------
+3. SECCIONES QUE FALTAN (agregar) - prioridad ALTA
+--------------------------------------------------------------------------------
+
+[F1] ANTECEDENTES / ESTADO DEL ARTE  (obligatorio en UNAD)
+    Dónde: dentro del Marco Referencial, antes del Marco Teórico.
+    Qué escribir: comparar 3-5 soluciones existentes relacionadas:
+      - Sistemas de matrícula digital (ej. Rios Zuñiga & Ysmodes 2024, que
+        ya citas en bibliografía: matrícula digital en AWS para el MinEduc)
+      - Sistemas de gestión educativa (SIGED - Arias Ortiz et al. 2021)
+      - Modelo de gestión financiera digital educativa (Ramos Diaz &
+        Espinosa Sarmiento 2026)
+      - Softwares comerciales de gestión escolar (ej. Master2000, Phidias,
+        OpenSIS) -> comparar costos, complejidad, y cómo SchoolNode se
+        diferencia (open source, liviano, pagos con Stripe).
+    Formato sugerido: una tabla comparativa (solución, tecnología,
+    ventajas, desventajas, cómo mejora SchoolNode).
+
+[F2] MARCO LEGAL  (obligatorio en Colombia)
+    Dónde: dentro del Marco Referencial, después del Marco Conceptual.
+    Qué escribir (mínimo):
+      - Ley 1581 de 2012 (protección de datos personales - Habeas Data) y
+        Decreto 1377 de 2013: cómo la app protege datos de estudiantes.
+      - Ley 1266 de 2008 (Habeas Data financiero).
+      - Ley 527 de 1999 (comercio electrónico y firmas digitales) por el
+        pago en línea.
+      - PCI DSS (estándar de seguridad de tarjetas): cómo Stripe evita que
+        la app maneje datos de tarjeta (Stripe.js, tokens, no almacenar
+        PAN).
+      - OWASP Top 10: cómo se mitigan los riesgos principales (XSS con
+        cookies httpOnly, inyección con Mongoose/parámetros, IDOR con RBAC
+        y validación de ids).
+
+[F3] ANÁLISIS DE REQUERIMIENTOS  (obligatorio)
+    Dónde: después de Metodología / antes de Stack Tecnológico.
+    Qué escribir:
+      - Requerimientos FUNCIONALES numerados (RF-01 autenticación,
+        RF-02 gestión de estudiantes, RF-03 cursos, RF-04 aulas y cupos,
+        RF-05 matrículas, RF-06 pagos físicos, RF-07 pasarela Stripe,
+        RF-08 webhooks, RF-09 facturas PDF, RF-10 configuración,
+        RF-11 notificaciones...).
+      - Requerimientos NO FUNCIONALES (RNF-01 seguridad, RNF-02
+        rendimiento, RNF-03 disponibilidad, RNF-04 usabilidad,
+        RNF-05 portabilidad Docker, RNF-06 accesibilidad).
+      - Historias de usuario en formato "Como [rol], quiero [acción],
+        para [beneficio]" (ya las mencionas en la metodología: incluir
+        ejemplos reales del backlog de Taiga).
+      - Diagrama de casos de uso (UML) con 2-3 actores (Admin, Empleado,
+        Estudiante/público).
+
+[F4] PRUEBAS Y CALIDAD DEL SOFTWARE  (hoy es el hueco MÁS grande)
+    Dónde: nueva sección "Pruebas" después de Desarrollo Backend.
+    Qué escribir (¡ya tienes todo el material!):
+      - Estrategia de pruebas: unitarias (modelos) e integración (API con
+        fetch + MongoDB local).
+      - Framework: node:test (runner nativo de Node).
+      - Resultado REAL: 110 pruebas automatizadas, 110/110 pasando.
+      - Lista de casos de prueba críticos cubiertos:
+        + Matriz de roles admin/empleado (403/401)
+        + Reglas de matrícula: doble matrícula activa, cupo de aula,
+          morosidad automática, migración de aula
+        + Pagos: webhook con firma HMAC, montos parciales, IDEMPOTENCIA
+          (evento duplicado de Stripe no duplica el pago)
+        + Seguridad: rotación de refresh tokens, reuso rechazado,
+          auto-refresh, cookies httpOnly/sameSite
+        + Facturas PDF (firma %PDF, tipos, 404)
+        + CRUD con validaciones y duplicados
+      - Pruebas funcionales manuales con el personal de "Motos BSA la 23"
+        (levantar evidencia: listas de verificación firmadas o fotos).
+      - Indicadores: tiempo promedio de matrícula antes vs después
+        (si se midió), % de errores de conciliación eliminados, etc.
+    Esto convierte el "Resultado esperado: Aplicación Web Funcional" en un
+    resultado DEMOSTRADO con evidencia.
+
+[F5] IMPLEMENTACIÓN Y DESPLIEGUE  (obligatorio)
+    Dónde: nueva sección "Despliegue" (o dentro de Pruebas).
+    Qué escribir:
+      - Repositorio GitHub (URL real).
+      - Contenedorización: Dockerfile + docker-compose.yml (explicar capas,
+        variable NODE_ENV, puerto).
+      - Plataforma PaaS real: Render (URL: https://schoolnode-pwmx.onrender.com),
+        conexión a MongoDB Atlas, HTTPS, cookies secure en producción.
+      - Configuración del webhook de Stripe en producción (endpoint,
+        secreto).
+      - Manual de instalación: referencia al README.md y DEPLOY.md del
+        repositorio.
+
+[F6] RESULTADOS OBTENIDOS  (obligatorio)
+    Dónde: nueva sección después de "Resultados esperados" o antes de
+    conclusiones.
+    Qué escribir: tabla comparativa "Esperado vs Obtenido":
+      - Aplicación funcional -> desplegada en Render y accesible.
+      - Pasarela de pagos -> en modo TEST (si es el caso) o producción,
+        con webhooks activos.
+      - 110 pruebas automatizadas -> cubren los flujos críticos.
+      - Validación con la institución -> sesiones de capacitación
+        realizadas, evidencia.
+      - Cumplimiento del cronograma (meses reales vs planificados).
+    Si no hay mediciones formales de tiempo, hacer UNA pequeña prueba
+    controlada ahora (medir matrícula manual vs con SchoolNode) y
+    presentarla como dato.
+
+[F7] CONCLUSIONES  (obligatorio - no existe)
+    Dónde: después de Resultados Obtenidos.
+    Qué escribir (4-6 párrafos):
+      - Cumplimiento de cada objetivo específico (1-2 párrafos por
+        objetivo).
+      - Aprendizajes técnicos (Node.js, MongoDB, Stripe, Docker,
+        seguridad).
+      - Valor del caso real en "Motos BSA la 23".
+      - Limitaciones del trabajo (alcance, pagos en test, un solo
+        evaluador de usabilidad...).
+      - Aporte al sector y a la comunidad open source.
+
+[F8] RECOMENDACIONES Y TRABAJOS FUTUROS
+    Ideas concretas (ya existen en el código para sugerir):
+      - Módulo de estudiantes autenticados (hoy solo admin/empleado).
+      - Reportes financieros y dashboard gráfico.
+      - Notificaciones por WhatsApp (la interfaz ya tiene la pantalla de
+        notificaciones).
+      - Migrar el frontend a un framework SPA (React/Vue) consumiendo la
+        API existente.
+      - Pasarela de pagos en modo producción + facturación electrónica
+        DIAN (el modelo ya guarda resolución DIAN).
+      - CI/CD con GitHub Actions (ejecutar los 110 tests en cada push).
+      - Monitoreo y logs centralizados (Winston ya existe).
+
+--------------------------------------------------------------------------------
+4. SECCIONES OPCIONALES QUE REFORZARÍAN EL DOCUMENTO
+--------------------------------------------------------------------------------
+[O1] DEDICATORIA Y AGRADECIMIENTOS (después de la portada).
+[O2] GLOSARIO DE TÉRMINOS (al final, antes de apéndices) - ya tienes el
+     material del marco conceptual (middleware, PaaS, webhook, RBAC...).
+[O3] MODELO USUARIO-APLICACIÓN: explicar mejor el flujo de datos EJS ->
+     API -> MongoDB con un diagrama de secuencia (hoy es solo texto).
+[O4] INVENTARIO DE ENDPOINTS (tabla con método, ruta, rol, descripción) -
+     es un anexo muy valorado por los jurados. Puedes generarla desde
+     src/routes/.
+[O5] APÉNDICE: manual de usuario breve (pantallas con instrucciones) o
+     referencia al README.
+[O6] APÉNDICE: guion de sustentación / preguntas frecuentes previstas.
+
+--------------------------------------------------------------------------------
+5. ORDEN SUGERIDO PARA REESTRUCTURAR EL DOCUMENTO FINAL
+--------------------------------------------------------------------------------
+ 1. Portada
+ 2. (Opcional) Dedicatoria / Agradecimientos
+ 3. Resumen + Palabras clave
+ 4. Abstract + Keywords
+ 5. Tabla de Contenido / Lista de Figuras / Lista de Tablas
+ 6. Introducción
+ 7. Justificación
+ 8. Objetivos (general y específicos)
+ 9. Metodología (tipo, Scrum, fases CORREGIDAS, stack tecnológico)
+10. Marco Referencial
+    - Antecedentes / Estado del arte          [F1]
+    - Marco teórico
+    - Marco conceptual
+    - Marco legal                             [F2]
+11. Análisis de requerimientos y casos de uso [F3]
+12. Desarrollo Frontend (pantallas con capturas REALES)
+13. Desarrollo Backend (BD + entidades + seguridad + validaciones)
+14. Pruebas y calidad del software            [F4]
+15. Implementación y despliegue               [F5]
+16. Resultados obtenidos (esperado vs real)   [F6]
+17. Conclusiones                              [F7]
+18. Recomendaciones y trabajos futuros        [F8]
+19. Referencias Bibliográficas
+20. Apéndices (institución, acta, endpoints, manual de usuario)
+
+--------------------------------------------------------------------------------
+6. CHECKLIST FINAL ANTES DE ENTREGAR
+--------------------------------------------------------------------------------
+[ ] Unificar Railway -> Render (E2)
+[ ] Renumerar fases (E1)
+[ ] Renumerar figuras y corregir typos de la lista (E4)
+[ ] Tabla de contenido automática (E5)
+[ ] Reemplazar todos los textos OCR por capturas reales (E8)
+[ ] Agregar: antecedentes, marco legal, requerimientos, pruebas,
+    despliegue, resultados, conclusiones, recomendaciones (F1-F8)
+[ ] Corrección ortográfica completa (E7)
+[ ] Verificar que Resumen y Abstract coincidan (E3)
+[ ] Paginación: eliminar números manuales y exportar a PDF/Word limpio
+================================================================================

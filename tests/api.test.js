@@ -112,7 +112,14 @@ test('API rutas protegidas: sin sesión responden 401', async () => {
 });
 
 test('API refresh: renueva el access token con la cookie de refresh', async () => {
-  const res = await api('/api/auth/refresh', { method: 'POST', cookie: cookieAdmin });
+  // Sesión fresca: la rotación de tokens invalida cookies de logins anteriores
+  const resLogin = await api('/api/auth/login', {
+    method: 'POST',
+    body: { email: 'admin@test.com', password: 'Admin123!' },
+  });
+  const cookie = extraerCookies(resLogin);
+
+  const res = await api('/api/auth/refresh', { method: 'POST', cookie });
   assert.strictEqual(res.status, 200);
   const json = await res.json();
   assert.ok(json.accessToken);

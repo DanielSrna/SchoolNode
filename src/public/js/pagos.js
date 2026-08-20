@@ -12,25 +12,23 @@ async function cargarPagos() {
     const response = await fetch('/api/matriculas', { credentials: 'same-origin' });
     const matriculas = await response.json();
 
-    let totalGanado = 0;
-    let totalDeuda = 0;
-
     const tbody = document.getElementById('tablaPagos');
     tbody.innerHTML = '';
 
-    matriculas.forEach(mat => {
-      // deudaTotal = costo total del curso
-      // totalPagado = lo que ya se ha pagado
-      // faltante = lo que falta por pagar
-      totalGanado += mat.totalPagado || 0;
-      totalDeuda += mat.saldoPendiente || 0;
+    let totalGanado = 0;
+    let totalDeuda = 0;
 
-      const cursoId = mat.curso._id.substr(-6);
-      const alumnoId = mat.estudiante.cedula;
-      const pagosCount = mat.pagos.length;
-      const deudaTotal = mat.curso.precio; // Costo total del curso
+    matriculas.forEach(mat => {
+      // Tolerar referencias rotas (estudiante/curso eliminados)
+      const cursoId = mat.curso ? mat.curso._id.substr(-6) : '-';
+      const alumnoId = mat.estudiante ? mat.estudiante.cedula : '-';
+      const pagosCount = (mat.pagos || []).length;
+      const deudaTotal = mat.curso ? mat.curso.precio : 0; // Costo total del curso
       const totalPagado = mat.totalPagado || 0; // Ya pagado
       const faltante = mat.saldoPendiente || 0; // Faltante por pagar
+
+      totalGanado += mat.totalPagado || 0;
+      totalDeuda += mat.saldoPendiente || 0;
 
       const tr = document.createElement('tr');
       let acciones = '';
@@ -59,6 +57,10 @@ async function cargarPagos() {
       `;
       tbody.appendChild(tr);
     });
+
+    if (matriculas.length === 0) {
+      mostrarVacio(tbody, 7, 'No hay pagos registrados');
+    }
 
     document.getElementById('totalGanado').textContent = `$${totalGanado.toLocaleString()}`;
     document.getElementById('totalDeuda').textContent = `$${totalDeuda.toLocaleString()}`;

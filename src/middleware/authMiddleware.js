@@ -10,10 +10,13 @@ const authMiddleware = async (req, res, next) => {
 
     // Si no hay access token, intentar con refresh token directamente
     if (!token) {
-      const refreshed = await intentarRefresh(req, res);
-      if (refreshed) return next();
-      logger.error('Intento de acceso sin token');
-      return res.status(401).json({ error: 'No autorizado - Token no proporcionado' });
+      const nuevoToken = await intentarRefresh(req, res);
+      if (nuevoToken) {
+        token = nuevoToken;
+      } else {
+        logger.error('Intento de acceso sin token');
+        return res.status(401).json({ error: 'No autorizado - Token no proporcionado' });
+      }
     }
 
     // Verificar access token
@@ -25,10 +28,10 @@ const authMiddleware = async (req, res, next) => {
       if (decoded && decoded.exp && decoded.exp * 1000 < Date.now()) {
         // El access token expiró, intentar refresh
         logger.proceso('Access token expirado, intentando refresh automático');
-        const refreshed = await intentarRefresh(req, res);
-        if (refreshed) {
-          // Re-leer el token de las cookies (fue actualizado)
-          token = req.cookies.accessToken;
+        const nuevoToken = await intentarRefresh(req, res);
+        if (nuevoToken) {
+          // Usar el token NUEVO (el viejo quedó en las cookies de la petición)
+          token = nuevoToken;
           payload = verificarToken(token, process.env.JWT_SECRET);
         }
       }
@@ -55,20 +58,24 @@ const authMiddleware = async (req, res, next) => {
   }
 };
 
-// Función auxiliar para intentar refresh automático
+// Función auxiliar para intentar refresh automático.
+// Devuelve el NUEVO access token si el refresh fue exitoso, o null si falló.
 const intentarRefresh = async (req, res) => {
   try {
     const refreshToken = req.cookies.refreshToken;
-    if (!refreshToken) return false;
+    if (!refreshToken) return null;
 
     const payload = verificarToken(refreshToken, process.env.JWT_REFRESH_SECRET);
-    if (!payload) return false;
+    if (!payload) return null;
 
     const usuario = await User.findById(payload.id);
-    if (!usuario || !usuario.refreshToken || !usuario.activo) return false;
+    if (!usuario || !usuario.refreshToken || !usuario.activo) return null;
 
-    const refreshValido = require('bcryptjs').compare(refreshToken, usuario.refreshToken);
-    if (!refreshValido) return false;
+    const refreshValido = await require('bcryptjs').compare(
+      refreshToken,
+      usuario.refreshToken
+    );
+    if (!refreshValido) return null;
 
     // Generar nuevos tokens
     const { generarAccessToken, generarRefreshToken } = require('../config/jwt');
@@ -98,14 +105,17 @@ const intentarRefresh = async (req, res) => {
     });
 
     logger.exito(`Token auto-renovado: ${usuario.email}`);
-    return true;
+    return newAccessToken;
   } catch (error) {
     logger.error(`Error en refresh automático: ${error.message}`);
-    return false;
+    return null;
   }
 };
 
-// Middleware opcional: adjunta el usuario a res.locals si está autenticado
+// Middleware opcional: adjunta el usuario a res.locals si está autenticado.
+// NO rota tokens: solo identifica (con el access token o, si expiró, con el
+// refresh token). La rotación real ocurre en authMiddleware al consumir una
+// ruta protegida, para no invalidar la cookie a medio camino.
 const attachUser = async (req, res, next) => {
   // Siempre inicializar las variables con false por defecto
   res.locals.usuario = null;
@@ -116,25 +126,15 @@ const attachUser = async (req, res, next) => {
   try {
     let token = req.cookies.accessToken || req.headers.authorization?.split(' ')[1];
 
-    if (!token) {
-      // Intentar refresh silencioso
-      await intentarRefresh(req, res);
-      token = req.cookies.accessToken;
-      if (!token) return next();
+    let payload = token ? verificarToken(token, process.env.JWT_SECRET) : null;
+
+    // Access token ausente o vencido: identificar con el refresh token
+    // (solo lectura, sin rotación ni nuevas cookies)
+    if (!payload && req.cookies.refreshToken) {
+      payload = verificarToken(req.cookies.refreshToken, process.env.JWT_REFRESH_SECRET);
     }
 
-    let payload = verificarToken(token, process.env.JWT_SECRET);
-
-    // Si el access token expiró, intentar refresh silencioso
-    if (!payload) {
-      const refreshed = await intentarRefresh(req, res);
-      if (refreshed) {
-        token = req.cookies.accessToken;
-        payload = token ? verificarToken(token, process.env.JWT_SECRET) : null;
-      }
-    }
-
-    if (payload) {
+    if (payload && payload.id) {
       const usuario = await User.findById(payload.id).select('-password -refreshToken');
       if (usuario && usuario.activo) {
         req.usuario = usuario;

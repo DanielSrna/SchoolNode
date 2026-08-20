@@ -16,11 +16,20 @@ document.addEventListener('DOMContentLoaded', function() {
     formEst.addEventListener('submit', guardarEstudiante);
   }
 
+  const btnNuevo = document.querySelector('[onclick="abrirNuevoEstudiante()"]');
+
   if (window.esEmpleado) {
-    const btnNuevo = document.querySelector('[data-bs-target="#modalEstudiante"]');
     if (btnNuevo) btnNuevo.style.display = 'none';
   }
 });
+
+// Abre el modal SIEMPRE limpio para crear un estudiante nuevo
+function abrirNuevoEstudiante() {
+  estudianteEditandoId = null;
+  document.getElementById('formEstudiante').reset();
+  document.querySelector('#modalEstudiante .modal-title').textContent = 'Nuevo Estudiante';
+  new bootstrap.Modal(document.getElementById('modalEstudiante')).show();
+}
 
 async function cargarEstudiantes(cedula = '') {
   try {
@@ -48,6 +57,10 @@ async function cargarEstudiantes(cedula = '') {
       `;
       tbody.appendChild(tr);
     });
+
+    if (data.estudiantes.length === 0) {
+      mostrarVacio(tbody, 5, 'No hay estudiantes registrados');
+    }
 
     const paginacion = document.getElementById('paginacion');
     paginacion.innerHTML = '';
@@ -157,13 +170,16 @@ async function eliminarEstudiante(id) {
 
   try {
     const response = await fetch(`/api/estudiantes/${id}`, { method: 'DELETE' });
+    const data = await response.json().catch(() => null);
     if (response.ok) {
       alert('Estudiante eliminado');
       cargarEstudiantes();
     } else {
-      alert('Error al eliminar');
+      // Mostrar el motivo real (matrículas activas, sesión, etc.)
+      alert(data && data.error ? data.error : 'Error al eliminar estudiante');
     }
   } catch (error) {
     console.error('Error:', error);
+    alert('Error de conexión');
   }
 }

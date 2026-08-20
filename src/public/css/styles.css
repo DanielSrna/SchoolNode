@@ -57,7 +57,10 @@ body {
   font-weight: 500;
   border-radius: 0.25rem;
   margin: 0.25rem 0.5rem;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-align: left;
 }
 
 .sidebar .nav-link:hover {
@@ -65,7 +68,7 @@ body {
 }
 
 .sidebar .nav-link.active {
-  background-color: #0d6efd;
+  background-color: var(--color-primario, #0d6efd);
   color: white;
 }
 
@@ -79,6 +82,10 @@ body {
 .sidebar-bottom .btn {
   border-radius: 0.25rem;
   font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
 }
 
 /* Botón cerrar del sidebar (solo visible en móvil/tablet) */
@@ -201,10 +208,22 @@ body {
 
 .table td .btn {
   margin: 0.1rem 0.1rem;
+  white-space: nowrap;
 }
 
+/* En pantallas pequeñas las tablas anchas hacen scroll horizontal
+   en vez de aplastar las columnas */
 .table-responsive {
   margin-bottom: 0.5rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table-responsive .table {
+  min-width: 560px;
+}
+
+.table-responsive .table.tabla-estudiantes {
+  min-width: 480px;
 }
 
 /* ---------- Status badges ---------- */
@@ -425,6 +444,53 @@ body {
   .modal-dialog {
     margin: 0.5rem;
   }
+
+  /* Agrupación de botones del header: solo iconos */
+  .header-bar .btn-header-texto {
+    display: none;
+  }
+
+  .header-bar .btn {
+    padding: 0.4rem 0.55rem;
+  }
+}
+
+/* ============================================================
+   MÓVIL PEQUEÑO (< 576px): header con solo iconos
+   ============================================================ */
+@media (max-width: 575.98px) {
+  .header-info h5 {
+    font-size: 0.95rem;
+  }
+
+  .header-info small {
+    font-size: 0.72rem;
+  }
+
+  /* Los títulos de página se apilan con sus botones */
+  .d-flex.justify-content-between {
+    gap: 0.5rem;
+  }
+
+  /* Botones de acciones de tabla: apilados y a ancho completo no; se mantienen
+     inline dentro del scroll horizontal */
+  .table td .btn {
+    display: inline-block;
+  }
+
+  /* Formularios: los grupos en fila pasan a columna con separación */
+  .row.mb-3 > [class*="col-"] {
+    margin-bottom: 0.5rem;
+  }
+
+  .row.mb-3 > [class*="col-"]:last-child {
+    margin-bottom: 0;
+  }
+
+  /* Cards de estadísticas: números un poco más grandes en pantalla chica */
+  .card .display-6 {
+    font-size: 1.7rem;
+  }
 }
 
 /* ============================================================
@@ -508,4 +574,86 @@ body {
   .aviso-credenciales {
     display: none;
   }
+}
+
+/* ============================================================
+   MODO OSCURO (data-bs-theme="dark" de Bootstrap 5.3)
+   Overrides para los elementos propios de SchoolNode
+   ============================================================ */
+[data-bs-theme="dark"] {
+  color-scheme: dark;
+}
+
+[data-bs-theme="dark"] .sidebar {
+  background-color: #212529 !important;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, .4);
+}
+
+[data-bs-theme="dark"] .sidebar .nav-link {
+  color: #dee2e6 !important;
+}
+
+[data-bs-theme="dark"] .sidebar .nav-link:hover {
+  background-color: #343a40;
+}
+
+[data-bs-theme="dark"] .sidebar .nav-link.active {
+  background-color: var(--color-primario, #0d6efd);
+  color: white;
+}
+
+[data-bs-theme="dark"] .sidebar-bottom {
+  background-color: #212529 !important;
+  border-top-color: #343a40;
+}
+
+[data-bs-theme="dark"] .sidebar-bottom .btn-light {
+  background-color: #343a40;
+  border-color: #495057;
+  color: #dee2e6;
+}
+
+[data-bs-theme="dark"] .sidebar-cerrar {
+  color: #adb5bd;
+}
+
+[data-bs-theme="dark"] .sidebar-cerrar:hover {
+  color: #fff;
+}
+
+[data-bs-theme="dark"] .header-bar {
+  background: #212529;
+  border-bottom-color: #343a40;
+}
+
+[data-bs-theme="dark"] .header-bar h5 {
+  color: #f8f9fa;
+}
+
+[data-bs-theme="dark"] .btn-menu {
+  background: #343a40;
+  border-color: #495057;
+  color: #dee2e6;
+}
+
+[data-bs-theme="dark"] .btn-menu:hover {
+  background: #495057;
+}
+
+[data-bs-theme="dark"] .table th {
+  background-color: #343a40;
+}
+
+[data-bs-theme="dark"] .table-hover tbody tr:hover {
+  background-color: #2b3035;
+}
+
+[data-bs-theme="dark"] .card-header {
+  background-color: #2b3035;
+  border-bottom-color: #343a40;
+}
+
+[data-bs-theme="dark"] .logo-placeholder {
+  background-color: #343a40;
+  border-color: #495057;
 }

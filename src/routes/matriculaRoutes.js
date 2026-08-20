@@ -8,6 +8,7 @@ const {
   actualizarMatricula,
   eliminarMatricula,
   migrarEstudiante,
+  notificarPago,
 } = require('../controllers/matriculaController');
 const authMiddleware = require('../middleware/authMiddleware');
 const roleMiddleware = require('../middleware/roleMiddleware');
@@ -58,6 +59,14 @@ router.post(
   ],
   validarCampos,
   migrarEstudiante
+);
+
+// Enviar recordatorio de pago por correo al estudiante (admin y empleado)
+router.post(
+  '/:id/notificar',
+  validarId,
+  validarCampos,
+  notificarPago
 );
 
 module.exports = router;

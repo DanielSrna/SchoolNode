@@ -1,5 +1,6 @@
 const stripe = require('../config/stripe');
 const Matricula = require('../models/Matricula');
+const { enviarCorreo, plantillaRecordatorioPago } = require('../config/mailer');
 const { ErrorAPI } = require('../utils/ErrorAPI');
 const logger = require('../utils/logger');
 
@@ -113,12 +114,58 @@ const procesarWebhookStripe = async (rawBody, firma) => {
 
     const matricula = await Matricula.findById(matriculaId);
     if (matricula) {
-      await matricula.agregarPago(parseFloat(monto), 'stripe', session.payment_intent);
-      logger.exito(`Pago registrado vía Stripe: ${session.id}`);
+      // Idempotencia: si Stripe reintenta el mismo evento (mismo payment_intent),
+      // NO volver a acreditar el pago.
+      const yaRegistrado = matricula.pagos.some(
+        (pago) => pago.stripePaymentId && pago.stripePaymentId === session.payment_intent
+      );
+      if (!yaRegistrado) {
+        await matricula.agregarPago(parseFloat(monto), 'stripe', session.payment_intent);
+        logger.exito(`Pago registrado vía Stripe: ${session.id}`);
+      } else {
+        logger.proceso(`Webhook duplicado ignorado: ${session.id}`);
+      }
     }
   }
 
   return { received: true };
+};
+
+// Envía un recordatorio de pago al correo del estudiante de una matrícula.
+// Requiere que la matrícula exista y que el estudiante tenga correo registrado.
+const enviarRecordatorioPago = async (matriculaId) => {
+  const matricula = await Matricula.findById(matriculaId).populate('estudiante').populate('curso');
+  if (!matricula) {
+    logger.error(`Matrícula no encontrada: ${matriculaId}`);
+    throw new ErrorAPI('Matrícula no encontrada', 404);
+  }
+
+  const estudiante = matricula.estudiante;
+  if (!estudiante || !estudiante.email) {
+    logger.error(`Estudiante sin correo registrado: ${matriculaId}`);
+    throw new ErrorAPI('El estudiante no tiene un correo registrado', 400);
+  }
+
+  const saldo = matricula.saldoPendiente || 0;
+  if (saldo <= 0) {
+    logger.error(`Matrícula sin saldo pendiente: ${matriculaId}`);
+    throw new ErrorAPI('La matrícula no tiene saldo pendiente', 400);
+  }
+
+  await enviarCorreo({
+    para: estudiante.email,
+    asunto: `SchoolNode - Recordatorio de pago: ${matricula.curso ? matricula.curso.nombre : 'matrícula'}`,
+    html: plantillaRecordatorioPago({
+      nombre: estudiante.nombre,
+      curso: matricula.curso ? matricula.curso.nombre : 'matrícula',
+      saldo,
+      fechaVencimiento: matricula.fechaVencimiento,
+      appUrl: process.env.APP_URL,
+    }),
+  });
+
+  logger.exito(`Recordatorio de pago enviado a ${estudiante.email} (matrícula ${matriculaId})`);
+  return { enviado: true, para: estudiante.email, saldo, fechaVencimiento: matricula.fechaVencimiento };
 };
 
 module.exports = {
@@ -127,4 +174,5 @@ module.exports = {
   confirmarPagoSimulado,
   registrarPagoFisico,
   procesarWebhookStripe,
+  enviarRecordatorioPago,
 };

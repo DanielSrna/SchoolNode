@@ -45,6 +45,10 @@ async function cargarEmpleados() {
       `;
       tbody.appendChild(tr);
     });
+
+    if (empleados.length === 0) {
+      mostrarVacio(tbody, 5, 'No hay empleados registrados');
+    }
   } catch (error) {
     console.error('Error cargando empleados:', error);
   }
