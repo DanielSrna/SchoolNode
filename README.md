@@ -209,16 +209,11 @@ npm run docker:logs  # Ver logs de contenedores
 
 MIT License
 
-## 👥 Autores
+## 👥 Autor
 
-- Daniel Felipe Serna López
-- Danny Alejandro Velasco Patiño
-- Idelgar Diaz Narvaez
+Daniel Felipe Serna López
 
 ## 🎓 Universidad
 
 Universidad Nacional Abierta y a Distancia UNAD  
 Ingeniería de Sistemas - 2026
-=======
-# SchoolNode
->>>>>>> 5d777d2576cf6d6d7895ada99811d050028f160c
